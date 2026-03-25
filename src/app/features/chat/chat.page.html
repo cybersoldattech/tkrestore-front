@@ -1,0 +1,634 @@
+<div class="flex h-screen  md:h-[85vh] overflow-hidden bg-base-100  md:rounded-2xl md:border md:border-base-300">
+
+  <!-- ═══════════════════════════════════════════════════════
+       SIDEBAR — Liste des conversations
+  ════════════════════════════════════════════════════════ -->
+  <aside class="flex flex-col flex-shrink-0 border-r border-base-300 bg-base-100 transition-all duration-300 z-20"
+       [class]="sidebarOpen()
+         ? 'w-full absolute inset-0 md:relative md:w-80'
+         : 'w-0 overflow-hidden md:w-80 md:overflow-visible'">
+
+    <div class="flex items-center justify-between px-4 py-3 border-b border-base-300">
+      <h1 class="font-bold text-lg text-base-content">{{ lang.t().chat.title }}</h1>
+    </div>
+
+    <div class="px-3 py-2 border-b border-base-300">
+      <div class="relative">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 text-lg pointer-events-none">search</span>
+        <input type="search" [formControl]="searchControl"
+               [placeholder]="lang.t().chat.searchPlaceholder"
+               class="input input-sm w-full pl-9 bg-base-200 border-0 focus:outline-none rounded-xl">
+      </div>
+    </div>
+
+    <div class="flex gap-1 px-3 py-2 border-b border-base-300 overflow-x-auto">
+      @for (f of filters(); track f.value) {
+        <button type="button" (click)="activeFilter.set(f.value)"
+          class="badge badge-sm cursor-pointer whitespace-nowrap flex-shrink-0"
+          [ngClass]="activeFilter() === f.value ? f.activeClass : 'badge-ghost'">
+           {{ f.label }}
+        </button>
+      }
+    </div>
+
+    <div class="flex-1 overflow-y-auto divide-y divide-base-200">
+      @if (filteredThreads().length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 text-base-content/30 gap-3 px-6 text-center">
+          <span class="material-symbols-outlined text-5xl">chat_bubble_outline</span>
+          <p class="text-sm font-medium">{{ lang.t().chat.noConversation }}</p>
+          <p class="text-xs">{{ lang.t().chat.noConversationSub }}</p>
+        </div>
+      }
+
+      @for (thread of filteredThreads(); track thread.id) {
+        <button type="button"
+          (click)="selectThread(thread.id)"
+          class="w-full text-left flex items-center gap-3 px-4 py-3 transition-all duration-200 hover:bg-base-200 relative"
+          [ngClass]="thread.id === activeThreadId()
+            ? 'bg-primary/10 border-l-4 border-primary shadow-sm'
+            : 'border-l-4 border-transparent hover:border-base-300'">
+
+          @if(myAvatar){
+            <img [src]="myAvatar" alt="User avatar" class="avatar rounded-full w-10 h-10 object-cover flex-shrink-0">
+          } @else {
+            <img src="assets/images/shield2.png" alt="TKrestore logo" class="avatar rounded-full w-10 h-10 object-cover flex-shrink-0">
+          }
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col">
+                <span class="font-semibold text-sm truncate"
+                      [class.text-primary]="thread.id === activeThreadId()"
+                      [class.text-base-content]="thread.id !== activeThreadId()">
+                  {{ thread.title }}
+                </span>
+                <span class="text-xs font-bold"
+                      [class.text-primary]="thread.id === activeThreadId()"
+                      [class.text-blue-600]="thread.id !== activeThreadId()">
+                  Ref: ({{ thread.reference }})
+                </span>
+              </div>
+              <span class="text-[10px] text-base-content/40 flex-shrink-0 ml-1">{{ thread.timeLabel }}</span>
+            </div>
+            <p class="text-xs text-base-content/50 truncate mt-0.5">{{ thread.lastMessage || '…' }}</p>
+            <div class="flex items-center gap-1.5 mt-1">
+              <span class="inline-block w-1.5 h-1.5 rounded-full" [class]="statusDot(thread.status)"></span>
+              <span class="text-[10px] text-base-content/40">{{ statusLabel(thread.status) }}</span>
+            </div>
+          </div>
+
+          @if (thread.unread > 0) {
+            <span class="badge badge-primary badge-sm flex-shrink-0">{{ thread.unread }}</span>
+          }
+        </button>
+      }
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════
+       ZONE PRINCIPALE — Conversation active
+  ════════════════════════════════════════════════════════ -->
+  <main class="flex flex-col flex-1 min-w-0 h-full overflow-hidden"
+        [class.hidden]="sidebarOpen() && isMobile()">
+
+    @if (!activeThreadId()) {
+      <div class="flex flex-col items-center justify-center h-full text-base-content/30 gap-4">
+        <span class="material-symbols-outlined text-6xl opacity-40">forum</span>
+        <p class="text-base font-semibold">{{ lang.t().chat.selectConversation }}</p>
+        <p class="text-sm text-center max-w-xs">{{ lang.t().chat.selectConversationSub }}</p>
+      </div>
+    } @else {
+
+      <!-- ── HEADER conversation ────────────────────────────────── -->
+      <header class="flex-shrink-0 flex items-center gap-3 px-4 py-3 border-b border-base-300 bg-base-100 z-10">
+
+        <button type="button"
+                class="btn btn-ghost btn-sm btn-circle md:hidden"
+                (click)="sidebarOpen.set(true)"
+                aria-label="Retour">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-sm truncate">{{ activeThread()?.title ?? lang.t().chat.selectConversation }}</p>
+          <p class="text-[10px] text-base-content/40">
+            <span class="inline-block w-1.5 h-1.5 rounded-full mr-1" [class]="statusDot(activeThread()?.status)"></span>
+            {{ statusLabel(activeThread()?.status) }}
+          </p>
+        </div>
+
+        @if (activeThread()?.status === 'ACTIVE' && isLoser() && !handoverInitiated()) {
+          <div class="flex gap-1">
+            <button type="button"
+              class="btn btn-circle btn-sm btn-primary"
+              [attr.data-tip]="lang.t().chat.handoverInitiateTooltip"
+              [attr.aria-label]="lang.t().chat.handoverInitiateTooltip"
+              (click)="initiateHandover()">
+              <span class="material-symbols-outlined text-base">key</span>
+            </button>
+          </div>
+        }
+
+        @if (activeThread()?.status === 'ACTIVE' && isLoser() && handoverInitiated()) {
+          <button type="button"
+            class="btn btn-circle btn-sm btn-warning"
+            [attr.data-tip]="lang.t().chat.handoverRegenerateTooltip"
+            [attr.aria-label]="lang.t().chat.handoverRegenerateTooltip"
+            (click)="regenerateHandover()">
+            <span class="material-symbols-outlined text-base">refresh</span>
+          </button>
+        }
+
+        @if (activeThread()?.status === 'ACTIVE' && isFinder() && !handoverConfirmed()) {
+          <button type="button"
+            class="btn btn-circle btn-sm btn-warning"
+            [attr.data-tip]="lang.t().chat.handoverEnterCodeTooltip"
+            [attr.aria-label]="lang.t().chat.handoverEnterCodeBtn"
+            onclick="otp_modal.showModal()">
+            <span class="material-symbols-outlined text-base">lock_open</span>
+          </button>
+        }
+
+        @if (handoverConfirmed()) {
+          <span class="badge badge-success gap-1 text-xs">
+            <span class="material-symbols-outlined text-xs">check_circle</span>
+            {{ lang.t().chat.handoverConfirmedBadge }}
+          </span>
+        }
+      </header>
+
+      <!-- ── Bannières état handover ────────────────────────────── -->
+      @if (isLoser() && handoverInitiated() && otpCode() && !handoverConfirmed() && !otpExpired()) {
+        <div class="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-2 bg-success/10 border-b border-success/30">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-success text-sm flex-shrink-0">key</span>
+            <span class="text-[11px] text-success font-semibold uppercase tracking-wider">
+              {{ lang.t().chat.handoverCodeLabel }}
+            </span>
+          </div>
+          <span class="text-2xl font-mono font-black text-success tracking-[.35em] select-all">{{ otpCode() }}</span>
+        </div>
+      }
+
+      @if (isLoser() && handoverInitiated() && otpExpired() && !handoverConfirmed()) {
+        <div class="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-2 bg-warning/10 border-b border-warning/30">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-warning text-sm flex-shrink-0">schedule</span>
+            <span class="text-[11px] text-warning font-semibold uppercase tracking-wider">
+              {{ lang.t().chat.handoverCodeExpired }}
+            </span>
+          </div>
+          <button type="button" class="btn btn-warning btn-xs" (click)="regenerateHandover()">
+            <span class="material-symbols-outlined text-sm">refresh</span>
+            {{ lang.t().chat.handoverRegenerateBtn }}
+          </button>
+        </div>
+      }
+
+      @if (isLoser() && loserMustConfirm() && !loserConfirmed()) {
+        <div class="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-2 bg-info/10 border-b border-info/30">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="material-symbols-outlined text-info text-sm flex-shrink-0">info</span>
+            <span class="text-xs text-info font-medium truncate">{{ lang.t().chat.loserConfirmTitle }}</span>
+          </div>
+          <button type="button" class="btn btn-info btn-sm flex-shrink-0" (click)="loserConfirmRecovery()">
+            <span class="material-symbols-outlined text-sm">check</span>
+            {{ lang.t().chat.loserConfirmBtn }}
+          </button>
+        </div>
+      }
+
+      @if (activeThread()?.status === 'ARCHIVED') {
+        <div class="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-warning/10 border-b border-warning/20">
+          <span class="material-symbols-outlined text-warning text-sm">archive</span>
+          <span class="text-xs text-warning font-medium">{{ lang.t().chat.archivedNotice }}</span>
+        </div>
+      }
+
+      <!-- ── Zone messages ──────────────────────────────────────── -->
+      <div #messagesContainer class="flex-1 overflow-y-auto p-4 space-y-4">
+
+        @if (activeThread() && messages().length === 0) {
+          @if (isLoser()) {
+            <div class="flex flex-col items-center justify-center h-full gap-6 px-2 py-6">
+              <div class="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <div class="text-center max-w-sm">
+                <h2 class="font-bold text-base mb-1">{{ lang.t().chat.welcomeTitle }}</h2>
+                <p class="text-xs text-base-content/50">{{ lang.t().chat.welcomeSubtitle }}</p>
+              </div>
+              <div class="w-full max-w-sm space-y-3">
+                <div class="flex items-start gap-3 bg-base-100 rounded-xl p-3 border border-base-300">
+                  <div class="w-8 h-8 rounded-lg bg-info/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold text-base-content mb-0.5">{{ lang.t().chat.conversationTitle }}</p>
+                    <p class="text-[11px] text-base-content/55 leading-relaxed">{{ lang.t().chat.conversationDescription }}</p>
+                  </div>
+                </div>
+                <div class="flex items-start gap-3 bg-base-100 rounded-xl p-3 border border-base-300">
+                  <div class="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold text-base-content mb-0.5">{{ lang.t().chat.publicPlaceTitle }}</p>
+                    <p class="text-[11px] text-base-content/55 leading-relaxed">{{ lang.t().chat.publicPlaceDescription }}</p>
+                  </div>
+                </div>
+                <div class="flex items-start gap-3 bg-base-100 rounded-xl p-3 border border-error/30 bg-error/5">
+                  <div class="w-8 h-8 rounded-lg bg-error/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold text-error mb-0.5">{{ lang.t().chat.noMoneyTitle }}</p>
+                    <p class="text-[11px] text-base-content/55 leading-relaxed">{{ lang.t().chat.noMoneyDescription }}</p>
+                  </div>
+                </div>
+                <div class="flex items-start gap-3 bg-base-100 rounded-xl p-3 border border-base-300">
+                  <div class="w-8 h-8 rounded-lg bg-warning/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold text-base-content mb-0.5">{{ lang.t().chat.codeTitle }}</p>
+                    <p class="text-[11px] text-base-content/55 leading-relaxed">{{ lang.t().chat.codeDescription }}</p>
+                  </div>
+                </div>
+              </div>
+              <p class="text-[11px] text-base-content/35 text-center max-w-xs">{{ lang.t().chat.footerMessage }}</p>
+            </div>
+          }
+
+          @if (isFinder()) {
+            <div class="flex flex-col items-center justify-center h-full gap-6 px-2 py-6">
+              <div class="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </div>
+              <div class="text-center max-w-sm">
+                <h2 class="font-bold text-base mb-1">{{ lang.t().chat.finderWelcomeTitle }}</h2>
+                <p class="text-xs text-base-content/50">{{ lang.t().chat.finderWelcomeSubtitle }}</p>
+              </div>
+              <div class="w-full max-w-sm space-y-3">
+                <div class="flex items-start gap-3 bg-base-100 rounded-xl p-3 border border-base-300">
+                  <div class="w-8 h-8 rounded-lg bg-info/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold text-base-content mb-0.5">{{ lang.t().chat.finderConversationTitle }}</p>
+                    <p class="text-[11px] text-base-content/55 leading-relaxed">{{ lang.t().chat.finderConversationDescription }}</p>
+                  </div>
+                </div>
+                <div class="flex items-start gap-3 bg-base-100 rounded-xl p-3 border border-base-300">
+                  <div class="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold text-base-content mb-0.5">{{ lang.t().chat.finderPublicPlaceTitle }}</p>
+                    <p class="text-[11px] text-base-content/55 leading-relaxed">{{ lang.t().chat.finderPublicPlaceDescription }}</p>
+                  </div>
+                </div>
+                <div class="flex items-start gap-3 bg-base-100 rounded-xl p-3 border border-warning/30 bg-warning/5">
+                  <div class="w-8 h-8 rounded-lg bg-warning/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold text-warning mb-0.5">{{ lang.t().chat.finderCodeTitle }}</p>
+                    <p class="text-[11px] text-base-content/55 leading-relaxed">{{ lang.t().chat.finderCodeDescription }}</p>
+                  </div>
+                </div>
+              </div>
+              <p class="text-[11px] text-base-content/35 text-center max-w-xs">{{ lang.t().chat.finderFooterMessage }}</p>
+            </div>
+          }
+        }
+
+        @for (msg of messages(); track msg.id) {
+          @if (msg.from === 'system') {
+            <div class="flex justify-center">
+              <span class="text-[11px] text-base-content/40 bg-base-200 px-3 py-1 rounded-full">{{ msg.text }}</span>
+            </div>
+          }
+          @if (msg.from !== 'system') {
+            <div class="chat" [class.chat-end]="msg.from === 'me'" [class.chat-start]="msg.from === 'them'">
+              <div class="chat-header text-[10px] text-base-content/40 mb-0.5">
+                {{ msg.author }}
+                <time class="ml-1">{{ msg.timeLabel }}</time>
+              </div>
+              <div class="chat-bubble"
+                [class.chat-bubble-primary]="msg.from === 'me'"
+                [class.chat-bubble-neutral]="msg.from === 'them'">
+                @if (msg.text) {
+                  <p class="text-sm whitespace-pre-wrap break-words">{{ msg.text }}</p>
+                }
+                @if (msg.attachments && msg.attachments.length > 0) {
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    @for (att of msg.attachments; track att.id) {
+                      @if (att.is_image) {
+                        <button type="button" (click)="openAttachmentPreview(att)"
+                          class="relative group rounded-lg overflow-hidden border border-white/20 flex-shrink-0 cursor-pointer">
+                          <img [src]="att.url" [alt]="att.file_name"
+                               class="h-28 w-28 object-cover group-hover:opacity-90 transition-opacity">
+                          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                            <span class="material-symbols-outlined text-white text-xl opacity-0 group-hover:opacity-100 transition-opacity">zoom_in</span>
+                          </div>
+                        </button>
+                      } @else if (att.is_pdf) {
+                        <button type="button" (click)="openAttachmentPreview(att)"
+                          class="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors cursor-pointer max-w-[200px]">
+                          <span class="material-symbols-outlined text-lg flex-shrink-0">picture_as_pdf</span>
+                          <span class="text-xs truncate">{{ att.file_name }}</span>
+                        </button>
+                      } @else {
+                        <button type="button" (click)="downloadAttachment(att)"
+                          class="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors cursor-pointer">
+                          <span class="material-symbols-outlined text-lg flex-shrink-0">attach_file</span>
+                          <span class="text-xs truncate max-w-[160px]">{{ att.file_name }}</span>
+                        </button>
+                      }
+                    }
+                  </div>
+                }
+                @if (msg.uploadProgress !== undefined && msg.uploadProgress < 100) {
+                  <div class="mt-2">
+                    <progress class="progress progress-primary w-full h-1" [value]="msg.uploadProgress" max="100"></progress>
+                    <p class="text-[10px] opacity-60 mt-0.5">{{ msg.uploadProgress }}%</p>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <!-- ── Zone saisie ─────────────────────────────────────────── -->
+      @if (activeThread()?.status !== 'ARCHIVED') {
+        @if (pendingAttachments().length > 0) {
+          <div class="flex-shrink-0 flex flex-wrap gap-2 px-4 pt-3 border-t border-base-300 bg-base-100">
+            @for (p of pendingAttachments(); track p.file.name) {
+              <div class="relative flex items-center gap-1.5 bg-base-200 rounded-lg px-2 py-1.5 text-xs max-w-[180px]">
+                <span class="material-symbols-outlined text-sm flex-shrink-0">
+                  {{ p.file.type.startsWith('image/') ? 'image' : 'description' }}
+                </span>
+                <span class="truncate">{{ p.file.name }}</span>
+                <button type="button" (click)="removePendingAttachment(p.file)"
+                  class="flex-shrink-0 text-base-content/40 hover:text-error transition-colors ml-1">
+                  <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+            }
+          </div>
+        }
+        <div class="flex-shrink-0 flex items-end gap-2 px-4 py-3 border-t border-base-300 bg-base-100"
+             (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)"
+             [class.ring-2]="isDraggingOver()" [class.ring-primary]="isDraggingOver()">
+          <label class="btn btn-circle btn-sm btn-ghost flex-shrink-0 cursor-pointer"
+                 [attr.aria-label]="lang.t().chat.attachFile">
+            <span class="material-symbols-outlined text-xl">attach_file</span>
+            <input type="file" class="hidden" multiple accept="image/*,.pdf" (change)="onFileSelected($event)">
+          </label>
+          <textarea [formControl]="message"
+            [placeholder]="lang.t().chat.typePlaceholder"
+            (keydown.enter)="onEnter($event)"
+            rows="1"
+            class="textarea textarea-bordered flex-1 resize-none rounded-xl text-sm py-2.5 min-h-[42px] max-h-32 overflow-y-auto focus:outline-none focus:border-primary"
+          ></textarea>
+          <button type="button"
+            class="btn btn-circle btn-primary flex-shrink-0"
+            [disabled]="isSending() || (!message.value?.trim() && pendingAttachments().length === 0)"
+            (click)="send()"
+            [attr.aria-label]="lang.t().chat.send">
+            @if (isSending()) {
+              <span class="material-symbols-outlined animate-spin text-xl">progress_activity</span>
+            } @else {
+              <span class="material-symbols-outlined text-xl">send</span>
+            }
+          </button>
+        </div>
+      } @else {
+        <div class="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-4 border-t border-base-300 bg-base-100/50">
+          <span class="material-symbols-outlined text-base-content/30">lock</span>
+          <p class="text-sm text-base-content/40 italic">{{ lang.t().chat.archivedNotice }}</p>
+        </div>
+      }
+    }
+  </main>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     [NEW] MODAL — Restauration réussie
+     Affichée pour les DEUX participants quand le chat est archivé.
+════════════════════════════════════════════════════════════════ -->
+@if (showRestorationSuccessModal()) {
+  <div class="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+       role="dialog" aria-modal="true" aria-labelledby="restoration-modal-title">
+
+    <div class="relative w-full max-w-md bg-white dark:bg-slate-900
+                rounded-3xl overflow-hidden shadow-2xl
+                border border-emerald-100 dark:border-emerald-900/30
+                animate-[fadeInScale_0.3s_ease-out]">
+
+      <!-- Bande supérieure décorative -->
+      <div class="h-2 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400"></div>
+
+      <!-- Contenu -->
+      <div class="px-8 pt-10 pb-8 text-center">
+
+        <!-- Icône animée -->
+        <div class="relative inline-flex mb-6">
+          <!-- Cercle externe pulsant -->
+          <div class="absolute inset-0 rounded-full bg-emerald-400/20 animate-ping"></div>
+          <!-- Cercle icône -->
+          <div class="relative w-24 h-24 rounded-full
+                      bg-gradient-to-br from-emerald-400 to-teal-500
+                      flex items-center justify-center shadow-xl shadow-emerald-500/30">
+            <span class="material-symbols-outlined text-5xl text-white"
+                  style="font-variation-settings:'FILL' 1">check_circle</span>
+          </div>
+          <!-- Badge étoile -->
+          <div class="absolute -top-1 -right-1 w-8 h-8 rounded-full
+                      bg-yellow-400 flex items-center justify-center shadow-md">
+            <span class="material-symbols-outlined text-white text-base"
+                  style="font-variation-settings:'FILL' 1">star</span>
+          </div>
+        </div>
+
+        <!-- Titre -->
+        <h2 id="restoration-modal-title"
+            class="text-2xl font-black text-slate-900 dark:text-white mb-2 leading-tight">
+          {{ lang.t().chat.restorationSuccessTitle }}
+        </h2>
+
+        <!-- Sous-titre avec nom du thread -->
+        @if (restoredThreadTitle()) {
+          <p class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-3">
+            {{ restoredThreadTitle() }}
+          </p>
+        }
+
+        <!-- Message principal -->
+        <p class="text-base-content/70 dark:text-slate-400 text-sm leading-relaxed mb-6">
+          {{ lang.t().chat.restorationSuccessMessage }}
+        </p>
+
+        <!-- Ligne séparatrice -->
+        <div class="h-px bg-slate-100 dark:bg-slate-800 mb-6"></div>
+
+        <!-- Message de remerciement -->
+        <div class="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/30
+                    border border-emerald-200 dark:border-emerald-900/40
+                    rounded-2xl px-4 py-3 mb-8">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40
+                      flex items-center justify-center flex-shrink-0">
+            <img src="assets/images/shield2.png" alt="TKRestore" class="w-6 h-6 object-contain">
+          </div>
+          <p class="text-xs text-slate-600 dark:text-slate-400 text-left leading-relaxed">
+            {{ lang.t().chat.restorationSuccessThanks }}
+          </p>
+        </div>
+
+        <!-- Boutons -->
+        <div class="flex flex-col gap-3">
+
+          <!-- Bouton principal — Retour à l'accueil -->
+          <button
+            type="button"
+            (click)="goHome()"
+            class="w-full flex items-center justify-center gap-2 py-3.5 px-6
+                   bg-gradient-to-r from-emerald-500 to-teal-500
+                   hover:from-emerald-600 hover:to-teal-600
+                   text-white font-bold rounded-2xl
+                   shadow-lg shadow-emerald-500/25
+                   transition-all duration-200 active:scale-95">
+            <span class="material-symbols-outlined text-xl">home</span>
+            {{ lang.t().chat.restorationSuccessHomeBtn }}
+          </button>
+
+          <!-- Bouton secondaire — Rester dans le chat -->
+          <button
+            type="button"
+            (click)="closeRestorationSuccessModal()"
+            class="w-full flex items-center justify-center gap-2 py-3 px-6
+                   bg-slate-100 hover:bg-slate-200
+                   dark:bg-slate-800 dark:hover:bg-slate-700
+                   text-slate-600 dark:text-slate-300 font-semibold rounded-2xl
+                   transition-all duration-200 active:scale-95 text-sm">
+            <span class="material-symbols-outlined text-base">chat</span>
+            {{ lang.t().chat.restorationSuccessStayBtn }}
+          </button>
+
+        </div>
+
+      </div>
+
+      <!-- Bande inférieure décorative -->
+      <div class="h-1 w-full bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400"></div>
+
+    </div>
+  </div>
+}
+
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL OTP — Saisie du code (finder)
+════════════════════════════════════════════════════════ -->
+<dialog id="otp_modal" class="modal modal-bottom sm:modal-middle">
+  <div class="modal-box max-w-sm">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-lg">{{ lang.t().chat.otpModalTitle }}</h3>
+      <form method="dialog">
+        <button type="submit" class="btn btn-ghost btn-sm btn-circle" (click)="resetOtp()"
+                [attr.aria-label]="lang.t().chat.otpClose">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </form>
+    </div>
+    <p class="text-sm text-base-content/60 mb-6">{{ lang.t().chat.otpModalSubtitle }}</p>
+    <div class="flex gap-2 justify-center mb-4">
+      @for (i of otpInputs; track i) {
+        <input type="text" inputmode="numeric" maxlength="1"
+          [id]="'otp-' + i"
+          (input)="onOtpInput($event, i)"
+          (keydown.backspace)="onOtpBackspace($event, i)"
+          (paste)="i === 0 && onOtpPaste($event)"
+          class="input input-bordered w-11 h-12 text-center text-xl font-bold rounded-xl
+                 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          [class.border-error]="otpError()"
+          autocomplete="one-time-code">
+      }
+    </div>
+    @if (otpError()) {
+      <div class="flex items-center gap-2 text-error text-sm mb-4">
+        <span class="material-symbols-outlined text-base">error</span>
+        {{ lang.t().chat.otpErrorInvalid }}
+      </div>
+    }
+    <button type="button"
+      class="btn btn-primary w-full"
+      [disabled]="!otpComplete() || isConfirmingOtp()"
+      (click)="confirmWithOtp()">
+      @if (isConfirmingOtp()) {
+        <span class="material-symbols-outlined animate-spin text-xl">progress_activity</span>
+        {{ lang.t().chat.otpValidating }}
+      } @else {
+        <span class="material-symbols-outlined text-xl">check_circle</span>
+        {{ lang.t().chat.otpConfirmBtn }}
+      }
+    </button>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button type="submit" (click)="resetOtp()">{{ lang.t().chat.otpClose }}</button>
+  </form>
+</dialog>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL PREVIEW — Pièce jointe
+════════════════════════════════════════════════════════ -->
+<dialog id="attachment_preview_modal" class="modal modal-bottom sm:modal-middle">
+  @if (previewAttachment()) {
+    <div class="modal-box max-w-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-sm truncate flex-1">{{ previewAttachment()?.file_name }}</h3>
+        <div class="flex gap-2 flex-shrink-0 ml-3">
+          <button type="button" class="btn btn-sm btn-outline gap-1" (click)="downloadAttachment(previewAttachment()!)">
+            <span class="material-symbols-outlined text-base">download</span>
+            {{ lang.t().chat.downloadAttachment }}
+          </button>
+          <button type="button" class="btn btn-sm btn-ghost btn-circle" (click)="closeAttachmentPreview()"
+                  [attr.aria-label]="lang.t().chat.closePreview">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+      </div>
+      @if (previewAttachment()?.is_image) {
+        <img [src]="previewAttachment()!.url" [alt]="previewAttachment()!.file_name"
+             class="w-full rounded-xl object-contain max-h-[70vh]">
+      } @else if (previewAttachment()?.is_pdf) {
+        <div class="flex flex-col items-center justify-center py-12 gap-4 text-base-content/40">
+          <span class="material-symbols-outlined text-6xl">picture_as_pdf</span>
+          <p class="text-sm">{{ previewAttachment()?.file_name }}</p>
+          <button type="button" class="btn btn-primary gap-1" (click)="downloadAttachment(previewAttachment()!)">
+            <span class="material-symbols-outlined">download</span>
+            {{ lang.t().chat.downloadAttachment }}
+          </button>
+        </div>
+      }
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button type="submit" (click)="closeAttachmentPreview()">{{ lang.t().chat.closePreview }}</button>
+    </form>
+  }
+</dialog>
+
+
+<!-- Animation fadeInScale (à ajouter dans votre fichier global CSS ou tailwind.config) -->
+<!-- 
+
+-->

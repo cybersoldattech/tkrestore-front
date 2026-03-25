@@ -1,0 +1,372 @@
+<div class="mx-auto w-full space-y-12">
+
+  <!-- ══ HERO SEARCH ══ -->
+  <header>
+    <div class="mb-8">
+      <h1 class="mb-3 text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white md:text-5xl">
+        {{ lang.t().search.heroTitle }}
+        <span class="text-primary">{{ lang.t().search.heroHighlight }}</span>
+      </h1>
+      <p class="max-w-xl text-lg text-slate-500 dark:text-slate-400">
+        {{ lang.t().search.heroSub }}
+      </p>
+    </div>
+
+    <!-- Barre de recherche -->
+    <div class="relative flex flex-col gap-3 sm:block">
+  
+      <!-- INPUT -->
+      <div class="relative">
+        <div class="pointer-events-none absolute inset-y-0 left-5 flex items-center">
+          <span class="material-symbols-outlined text-2xl sm:text-3xl text-slate-400 dark:text-slate-500">
+            travel_explore
+          </span>
+        </div>
+
+        <input
+          type="search"
+          [placeholder]="lang.t().search.placeholder"
+          [attr.aria-label]="lang.t().search.placeholder"
+          [value]="query()"
+          (input)="onSearch($event)"
+          (keydown.enter)="onKeyEnter()"
+          class="w-full rounded-xl border-2 border-primary/40
+                bg-white dark:bg-slate-800/60
+                py-4 sm:py-6 pl-14 sm:pl-20 
+                pr-4 sm:pr-36
+                text-base sm:text-lg
+                text-slate-900 dark:text-white
+                placeholder:text-slate-400 dark:placeholder:text-slate-500
+                outline-none shadow-sm transition-all
+                hover:border-primary/60
+                focus:border-primary focus:ring-4 focus:ring-primary/15
+                focus:shadow-xl focus:shadow-primary/10"
+        >
+      </div>
+
+      <!-- BUTTON (mobile full width / desktop absolute) -->
+      <div class="sm:absolute sm:inset-y-3 sm:right-3">
+        <button
+          type="button"
+          (click)="triggerSearch()"
+          class="w-full sm:w-auto h-12 sm:h-full
+                rounded-lg bg-primary px-6 sm:px-8
+                text-sm sm:text-base font-bold text-white
+                shadow-md shadow-primary/20 transition-all
+                hover:bg-primary/90 active:scale-95">
+          {{ lang.t().search.searchBtn }}
+        </button>
+      </div>
+
+</div>
+
+    <!-- Indication pour non-connecté -->
+    @if (!auth.isLoggedIn()) {
+      <p class="mt-3 flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+        <span class="material-symbols-outlined text-sm">info</span>
+        Votre recherche sera enregistrée pour vous notifier si un document correspondant est trouvé.
+      </p>
+    }
+
+    <!-- Filtres — sous-catégories depuis l'API -->
+    <div class="mt-6 flex flex-wrap gap-2.5" role="group" [attr.aria-label]="lang.t().search.filtersLabel">
+      @if (loadingSubCats()) {
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="h-9 w-24 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700"></div>
+        }
+      } @else {
+        @for (f of filters(); track f.id) {
+          <button
+            type="button"
+            class="rounded-full px-5 py-2 text-sm font-semibold transition-all active:scale-95"
+            [class.bg-primary]="activeFilter() === f.id"
+            [class.text-white]="activeFilter() === f.id"
+            [class.shadow-md]="activeFilter() === f.id"
+            [class.shadow-primary/20]="activeFilter() === f.id"
+            [class.bg-slate-100]="activeFilter() !== f.id"
+            [class.dark:bg-slate-800]="activeFilter() !== f.id"
+            [class.text-slate-600]="activeFilter() !== f.id"
+            [class.dark:text-slate-400]="activeFilter() !== f.id"
+            [class.hover:bg-slate-200]="activeFilter() !== f.id"
+            [class.dark:hover:bg-slate-700]="activeFilter() !== f.id"
+            (click)="setFilter(f.id)"
+            [attr.aria-pressed]="activeFilter() === f.id">
+            {{ f.name }}
+          </button>
+        }
+      }
+    </div>
+  </header>
+
+  <!-- ══ RÉSULTATS ══ -->
+  <section>
+
+    <!-- En-tête résultats -->
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+        {{ lang.t().search.resultsTitle }}
+        <span class="ml-2 text-base font-normal text-slate-400 dark:text-slate-500">
+          ({{ totalCount() }} {{ lang.t().search.resultsCount }})
+        </span>
+      </h2>
+      <div class="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
+        <span>{{ lang.t().search.sortBy }}</span>
+        <select (change)="onSort($event)"
+          class="cursor-pointer border-none bg-transparent font-bold text-primary outline-none focus:ring-0">
+          <option value="created_at">{{ lang.t().search.sortDate }}</option>
+          <option value="event_date">{{ lang.t().search.sortRelevance }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Skeleton loading -->
+    @if (isLoading()) {
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        @for (i of [1,2,3,4,5,6,7,8]; track i) {
+          <div class="flex flex-col overflow-hidden rounded-xl border border-slate-100 dark:border-slate-800
+                       bg-white dark:bg-slate-800/40 animate-pulse">
+            <div class="h-48 bg-slate-200 dark:bg-slate-700"></div>
+            <div class="p-5 space-y-3">
+              <div class="h-4 w-3/4 rounded bg-slate-200 dark:bg-slate-700"></div>
+              <div class="h-3 w-1/2 rounded bg-slate-200 dark:bg-slate-700"></div>
+              <div class="h-3 w-2/3 rounded bg-slate-200 dark:bg-slate-700"></div>
+              <div class="h-10 w-full rounded-xl bg-slate-200 dark:bg-slate-700 mt-2"></div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- État vide -->
+    @if (!isLoading() && results().length === 0) {
+      <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed
+                   border-slate-200 dark:border-slate-700 py-20 text-center">
+        <span class="material-symbols-outlined mb-4 text-6xl text-slate-300 dark:text-slate-600">search_off</span>
+        <p class="text-lg font-semibold text-slate-500 dark:text-slate-400">
+          {{ lang.t().search.emptyTitle }}
+        </p>
+        <p class="mt-1 text-sm text-slate-400 dark:text-slate-500">
+          {{ lang.t().search.emptySub }}
+        </p>
+      </div>
+    }
+
+    <!-- Grille de cartes -->
+    @if (!isLoading() && results().length > 0) {
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        @for (doc of results(); track doc.id) {
+          <article
+            class="group flex cursor-pointer flex-col overflow-hidden rounded-xl
+                   border border-slate-100 dark:border-slate-800
+                   bg-white dark:bg-slate-800/40
+                   shadow-sm transition-all duration-300
+                   hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5"
+          >
+            <!-- Image floue -->
+            <div class="relative h-48 overflow-hidden bg-slate-200 dark:bg-slate-700">
+              @if (doc && doc.images && doc?.images?.length) {
+                <img
+                  [src]="doc.images[0].blurred_url"
+                  [alt]="'Document de ' + doc.name_on_item"
+                  class="h-full w-full object-cover opacity-60 blur-sm transition-transform
+                         duration-500 group-hover:scale-110 group-hover:opacity-75"
+                  loading="lazy">
+              } @else {
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">description</span>
+                </div>
+              }
+
+              <!-- Badge sous-catégorie -->
+              <div class="absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-bold
+                           uppercase tracking-wide backdrop-blur-md"
+                   [class]="categoryClass(doc.sub_category?.name ?? '')">
+                {{ doc.sub_category?.name ?? 'Document' }}
+              </div>
+
+              <!-- Badge "Retrouvé" -->
+              <div class="absolute right-3 top-3 flex items-center gap-1 rounded-full
+                           bg-emerald-500/90 px-2.5 py-1 text-[10px] font-black
+                           uppercase tracking-wider text-white backdrop-blur-md shadow-sm">
+                <span class="material-symbols-outlined text-xs leading-none" aria-hidden="true"
+                      style="font-variation-settings:'FILL' 1">where_to_vote</span>
+                {{ lang.t().search.foundBadge }}
+              </div>
+
+              <!-- Overlay hover -->
+              <div class="absolute inset-0 flex items-center justify-center
+                           opacity-0 transition-opacity group-hover:opacity-100">
+                <a [routerLink]="['/app/restore', doc.id]" class="rounded-lg bg-white/90 px-4 py-2 text-sm font-bold
+                               text-primary shadow-lg dark:bg-slate-900/90">
+                  {{ lang.t().search.viewDetails }}
+                </a>
+              </div>
+            </div>
+
+            <!-- Infos carte -->
+            <div class="flex flex-1 flex-col p-5">
+              <h3 class="mb-3 text-base font-bold text-slate-900 dark:text-white
+                          transition-colors group-hover:text-primary">
+                {{ doc.name_on_item || doc.title }}
+              </h3>
+              <div class="mt-auto space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined shrink-0 text-base">location_on</span>
+                  <span class="truncate">{{ doc.location }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined shrink-0 text-base">calendar_today</span>
+                  <span>{{ lang.t().search.foundOn }} {{ formatDate(doc.event_date) }}</span>
+                </div>
+              </div>
+              <a [routerLink]="['/app/restore', doc.id]"
+                 class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl
+                        bg-slate-100 dark:bg-slate-700/50 py-2.5 text-sm font-bold
+                        text-slate-700 dark:text-slate-300 transition-all
+                        hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white"
+                 (click)="$event.stopPropagation()">
+                <span class="material-symbols-outlined text-base">open_in_new</span>
+                {{ lang.t().search.viewDetails }}
+              </a>
+            </div>
+          </article>
+        }
+      </div>
+
+      <!-- Load More -->
+      @if (hasMore()) {
+        <div class="mt-14 flex justify-center">
+          <button type="button"
+            (click)="loadMore()"
+            [disabled]="isLoadingMore()"
+            class="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700
+                   px-12 py-4 font-bold text-slate-700 dark:text-slate-300 transition-colors
+                   hover:bg-slate-100 dark:hover:bg-slate-800
+                   disabled:opacity-50 disabled:cursor-not-allowed">
+            @if (isLoadingMore()) {
+              <span class="material-symbols-outlined animate-spin">progress_activity</span>
+              Chargement…
+            } @else {
+              <span class="material-symbols-outlined">expand_more</span>
+              {{ lang.t().search.loadMore }}
+            }
+          </button>
+        </div>
+      }
+    }
+
+  </section>
+</div>
+
+<!-- ══ MODAL IDENTIFICATION (non-authentifié) ══ -->
+@if (showIdentModal()) {
+  <!-- Overlay -->
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px)">
+
+    <div class="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700
+                 bg-white dark:bg-[#0d2444] p-8 shadow-2xl"
+         role="dialog" aria-modal="true" aria-labelledby="modal-title">
+
+      <!-- Header modal -->
+      <div class="mb-6 flex items-start justify-between">
+        <div>
+          <div class="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <span class="material-symbols-outlined text-2xl text-primary" aria-hidden="true"
+                  style="font-variation-settings:'FILL' 1">manage_search</span>
+          </div>
+          <h2 id="modal-title" class="text-xl font-bold text-slate-900 dark:text-white">
+            Identifiez-vous pour rechercher
+          </h2>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Nous enregistrons votre recherche pour vous notifier si un document correspondant est trouvé.
+          </p>
+        </div>
+        <button type="button" (click)="closeModal()"
+          class="ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg
+                 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          aria-label="Fermer">
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
+      </div>
+
+      <!-- Formulaire -->
+      <form [formGroup]="identForm" (ngSubmit)="submitIdent()" novalidate class="space-y-4">
+
+        <!-- Email -->
+        <div class="space-y-1.5">
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300" for="ident-email">
+            Adresse email <span class="text-primary">*</span>
+          </label>
+          <input id="ident-email" type="email" formControlName="email"
+            placeholder="votre@email.com"
+            class="w-full rounded-xl border border-slate-200 dark:border-slate-600
+                   bg-slate-50 dark:bg-slate-800
+                   px-4 py-3 text-sm text-slate-900 dark:text-white
+                   placeholder:text-slate-400 outline-none transition
+                   focus:border-primary focus:ring-2 focus:ring-primary/20"
+            [class.border-red-400]="identForm.controls.email.invalid && identForm.controls.email.touched">
+          @if (identForm.controls.email.invalid && identForm.controls.email.touched) {
+            <p class="text-xs text-red-400">Adresse email invalide.</p>
+          }
+        </div>
+
+        <!-- Téléphone -->
+        <div class="space-y-1.5">
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300" for="ident-phone">
+            Numéro de téléphone <span class="text-primary">*</span>
+          </label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2
+                         text-slate-400 pointer-events-none text-lg">phone</span>
+            <input id="ident-phone" type="tel" formControlName="phone"
+              placeholder="+237 6XX XXX XXX"
+              class="w-full rounded-xl border border-slate-200 dark:border-slate-600
+                     bg-slate-50 dark:bg-slate-800
+                     pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-white
+                     placeholder:text-slate-400 outline-none transition
+                     focus:border-primary focus:ring-2 focus:ring-primary/20"
+              [class.border-red-400]="identForm.controls.phone.invalid && identForm.controls.phone.touched">
+          </div>
+          @if (identForm.controls.phone.invalid && identForm.controls.phone.touched) {
+            <p class="text-xs text-red-400">Numéro de téléphone invalide.</p>
+          }
+        </div>
+
+        <!-- Info RGPD -->
+        <div class="flex items-start gap-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3">
+          <span class="material-symbols-outlined shrink-0 text-base text-slate-400 mt-0.5">shield</span>
+          <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            Ces informations sont utilisées uniquement pour vous notifier si un document correspondant est trouvé. Elles ne sont pas partagées.
+          </p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3 pt-2">
+          <button type="button" (click)="closeModal()"
+            class="flex-1 rounded-xl border border-slate-200 dark:border-slate-600
+                   py-3 text-sm font-semibold text-slate-700 dark:text-slate-300
+                   transition-all hover:bg-slate-50 dark:hover:bg-slate-800">
+            Annuler
+          </button>
+          <button type="submit"
+            class="flex-1 rounded-xl bg-primary py-3 text-sm font-bold text-white
+                   shadow-md shadow-primary/20 transition-all
+                   hover:bg-primary/90 active:scale-95">
+            Rechercher
+          </button>
+        </div>
+
+        <!-- Lien connexion -->
+        <p class="text-center text-xs text-slate-400 dark:text-slate-500">
+          Vous avez un compte ?
+          <a routerLink="/auth/login" (click)="closeModal()"
+             class="font-semibold text-primary hover:underline">
+            Se connecter
+          </a>
+        </p>
+
+      </form>
+    </div>
+  </div>
+}

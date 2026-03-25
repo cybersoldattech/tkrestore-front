@@ -1,0 +1,809 @@
+<!-- restore-document.page.html -->
+<div class="mx-auto w-full">
+
+  <!-- ── Loading ── -->
+  @if (isLoadingDoc()) {
+    <div class="flex items-center justify-center py-24">
+      <span class="material-symbols-outlined animate-spin text-5xl text-primary">progress_activity</span>
+    </div>
+  }
+
+  <!-- ── Erreur chargement ── -->
+  @if (loadError()) {
+    <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed
+                 border-slate-200 dark:border-slate-700 py-20 text-center">
+      <span class="material-symbols-outlined mb-3 text-5xl text-slate-300">error</span>
+      <p class="font-semibold text-slate-500">  {{ lang.t().restore.NotFoundDocument }}</p>
+      <button type="button" (click)="goBack()"
+        class="mt-4 rounded-xl bg-primary px-6 py-2 text-sm font-bold text-white hover:bg-primary/90">
+        Retour
+      </button>
+    </div>
+  }
+
+  <!-- ── Contenu principal ── -->
+  @if (!isLoadingDoc() && !loadError() && item()) {
+
+    <!-- En-tête + barre de progression -->
+    <div class="mb-8">
+      <div class="flex flex-col gap-3">
+        <div class="flex justify-between items-end">
+          <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
+              {{ lang.t().restore.title }}
+            </h1>
+            <p class="mt-1 text-md font-bold text-slate-500 dark:text-slate-400">
+              {{ itemSubCat() }} — {{ itemTitle() }}
+            </p>
+          </div>
+          <p class="text-sm font-semibold text-primary shrink-0 ml-4">ID: #{{ reference() }}</p>
+        </div>
+        <div class="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+          @if (item()?.status === 'RETURNED') {
+            <div class="h-full bg-emerald-500 rounded-full w-full transition-all"></div>
+          } @else if (item()?.status === 'MATCHED') {
+            <div class="h-full bg-amber-500 rounded-full transition-all"
+                 [style.width]="payerConfirmed() === true ? '100%' : '66%'"></div>
+          } @else if (item()?.status === 'ACTIVE') {
+            <div class="h-full bg-primary rounded-full w-1/3 transition-all"></div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         BANNIÈRE CONFIRMATION — pleine largeur, au-dessus de la grille
+         Visible uniquement quand payerConfirmStep() = true (paiement COMPLETED)
+         et que l'utilisateur n'a pas encore agi
+    ════════════════════════════════════════════════════════════════ -->
+    <!-- ══ BARRE STICKY CONFIRMATION ══ -->
+    @if (payerConfirmStep() && payerConfirmed() === null) {
+      <div class="fixed bottom-0 left-0 right-0 z-40
+                  bg-white dark:bg-slate-900
+                  border-t border-amber-200 dark:border-amber-700
+                  shadow-2xl px-4 py-4 sm:px-6">
+
+        <div class="mx-auto max-w-2xl">
+          <!-- Titre -->
+          <div class="flex items-center gap-3 mb-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl
+                        bg-amber-100 dark:bg-amber-900/50">
+              <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-xl"
+                    style="font-variation-settings:'FILL' 1">help</span>
+            </span>
+            <div>
+              <p class="font-bold text-slate-900 dark:text-white text-sm leading-tight">
+                {{ lang.t().restore.confirmDocumentTitle }}
+              </p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                {{ lang.t().restore.confirmDocumentDescription }}
+                <strong>{{ lang.t().restore.confirmDocumentDescriptionNext }}</strong>
+              </p>
+            </div>
+          </div>
+
+          <!-- Boutons -->
+          <div class="flex gap-3">
+            <button type="button" (click)="confirmPayer()"
+              [disabled]="payerConfirming()"
+              class="flex flex-1 items-center justify-center gap-2 rounded-xl
+                    bg-emerald-500 px-5 py-3 text-sm font-bold text-white
+                    hover:bg-emerald-600 active:scale-[0.98]
+                    disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-sm">
+              @if (payerConfirming()) {
+                <span class="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+                {{ lang.t().documents.loading }}
+              } @else {
+                <span class="material-symbols-outlined text-lg"
+                      style="font-variation-settings:'FILL' 1">check_circle</span>
+                {{ lang.t().restore.confirmDocumentBtnLbl }}
+              }
+            </button>
+
+            <button type="button" (click)="rejectPayer()"
+              [disabled]="payerConfirming()"
+              class="flex flex-1 items-center justify-center gap-2 rounded-xl
+                    border-2 border-red-300 dark:border-red-700
+                    bg-white dark:bg-slate-900
+                    px-5 py-3 text-sm font-bold text-red-600 dark:text-red-400
+                    hover:bg-red-50 dark:hover:bg-red-950/30 active:scale-[0.98]
+                    disabled:opacity-60 disabled:cursor-not-allowed transition-all">
+              <span class="material-symbols-outlined text-lg"
+                    style="font-variation-settings:'FILL' 1">cancel</span>
+              {{ lang.t().restore.rejetctDocumentBtnLbl }}
+            </button>
+          </div>
+
+          <p class="mt-2 text-xs text-slate-400 dark:text-slate-500 text-center">
+            <span class="material-symbols-outlined text-xs align-middle mr-0.5">lock</span>
+            {{ lang.t().restore.warningDocumentBtn }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Spacer pour éviter que le contenu soit masqué par la barre -->
+      <!-- <div class="h-36"></div> -->
+    }
+
+    <!-- ═══════════════════════════════════════════════════════════
+         BANNIÈRE RÉSULTAT — visible après action confirm ou reject
+    ════════════════════════════════════════════════════════════════ -->
+    @if (payerConfirmed() === true) {
+      <div class="mb-8 rounded-2xl border border-emerald-200 dark:border-emerald-700
+                  bg-emerald-50 dark:bg-emerald-950/30 px-5 py-4 flex items-center gap-3">
+        <span class="material-symbols-outlined text-emerald-500 text-2xl shrink-0"
+              style="font-variation-settings:'FILL' 1">check_circle</span>
+        <div>
+          <p class="font-bold text-emerald-800 dark:text-emerald-300 text-sm">
+          {{ lang.t().restore.confirmRestoreTitle }} 
+          </p>
+          <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
+            {{ lang.t().restore.confirmRestoreDescription }} 
+          </p>
+        </div>
+      </div>
+    }
+
+    @if (payerConfirmed() === false && !payerConfirmStep()) {
+      <!-- Ce cas ne s'affiche que si l'erreur revient false côté API sans avoir déclenché le step -->
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+      <!-- ══ COLONNE GAUCHE ══ -->
+      <div class="lg:col-span-7 flex flex-col gap-6">
+
+        <!-- Aperçu du document -->
+        <section class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800
+                         bg-white dark:bg-slate-900/50 shadow-sm">
+
+          <!-- Header section image -->
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 p-4 sm:p-5">
+            <h2 class="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-sm sm:text-base">
+              <span class="material-symbols-outlined text-primary text-lg" aria-hidden="true">visibility</span>
+              {{ lang.t().restore.previewTitle }}
+            </h2>
+            @if (item()?.status === 'ACTIVE') {
+              <span class="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                {{ lang.t().restore.previewRestricted }}
+              </span>
+            } @else if (item()?.status === 'MATCHED') {
+              <span class="rounded-full bg-amber-100 dark:bg-amber-900/30 px-2.5 py-1 text-xs font-semibold
+                           text-amber-700 dark:text-amber-400">
+                En cours de vérification
+              </span>
+            } @else if (item()?.status === 'RETURNED') {
+              <span class="rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1 text-xs font-semibold
+                           text-emerald-700 dark:text-emerald-400">
+                Restauré
+              </span>
+            }
+          </div>
+ 
+         <div class="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+
+          <!-- Image floutée (fallback) -->
+          @if (!cleanUrl() && blurredImages().length > 0) {
+            <img [src]="blurredImages()[0]?.blurred_url" [alt]="itemTitle()"
+              class="absolute inset-0 h-full w-full object-cover blur-md opacity-50 grayscale scale-110">
+          }
+          {{cleanUrl() }}
+
+          <!-- Image claire (étape confirmation) -->
+          @if (cleanUrl()) {
+            <img [src]="cleanUrl()" [alt]="itemTitle()"
+              class="absolute inset-0 h-full w-full object-cover">
+          }
+
+          <!-- Overlay cadenas : uniquement si pas de cleanUrl -->
+          @if (!cleanUrl()) {
+            <div class="absolute inset-0 z-10 flex items-center justify-center p-8">
+              <div class="max-w-xs rounded-xl border border-slate-200 dark:border-slate-700
+                          bg-white/90 dark:bg-slate-900/90 p-6 text-center shadow-xl">
+                <span class="material-symbols-outlined mb-2 block text-4xl text-primary">lock</span>
+                <p class="mb-1 text-sm font-semibold text-slate-900 dark:text-white">
+                  {{ lang.t().restore.previewLockedTitle }}
+                </p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  {{ lang.t().restore.previewLockedSub }}
+                </p>
+              </div>
+            </div>
+          }
+        </div>
+
+          <!-- Footer image -->
+          <div class="bg-slate-50 dark:bg-slate-900/80 p-4 flex items-center justify-between gap-4">
+            <div>
+              <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                {{ itemSubCat() }} — {{ itemTitle() }}
+              </p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <span class="material-symbols-outlined text-xs align-middle mr-0.5">location_on</span>
+                {{ itemLocation() }} •
+                <span class="material-symbols-outlined text-xs align-middle mx-0.5">calendar_today</span>
+                {{ itemDate() }}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Cases de confirmation (seulement si ACTIVE et pas owner) -->
+        @if (item()?.status === 'ACTIVE' && !isOwner()) {
+          <section class="rounded-xl border border-slate-200 dark:border-slate-800
+                           bg-white dark:bg-slate-900/50 p-5 sm:p-6">
+            <h3 class="mb-1 font-bold text-slate-900 dark:text-white">
+              {{ lang.t().restore.termsTitle }}
+            </h3>
+            <p class="mb-5 text-xs text-slate-500 dark:text-slate-400">
+              {{ lang.t().restore.termsSubtitle }}
+            </p>
+
+            <form [formGroup]="form" novalidate>
+              <ul class="space-y-4">
+                @for (term of [
+                  { ctrl: 'acceptClarity', title: lang.t().restore.term1Title, sub: lang.t().restore.term1Sub },
+                  { ctrl: 'acceptOneTime', title: lang.t().restore.term2Title, sub: lang.t().restore.term2Sub },
+                  { ctrl: 'acceptDpa',     title: lang.t().restore.term3Title, sub: lang.t().restore.term3Sub }
+                ]; track term.ctrl) {
+                  <li class="flex items-start gap-3">
+                    <div class="relative mt-0.5 shrink-0">
+                      <input [id]="term.ctrl" type="checkbox" [formControlName]="term.ctrl"
+                        class="peer h-5 w-5 cursor-pointer appearance-none rounded border-2
+                               border-slate-300 dark:border-slate-600
+                               checked:border-primary checked:bg-primary
+                               focus:ring-2 focus:ring-primary/30 transition-all">
+                      <svg class="pointer-events-none absolute inset-0 m-auto hidden h-3 w-3
+                                   text-white peer-checked:block"
+                           viewBox="0 0 12 10" fill="none" aria-hidden="true">
+                        <path d="M1 5l3.5 3.5L11 1" stroke="currentColor" stroke-width="2"
+                              stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                    <label [for]="term.ctrl" class="cursor-pointer">
+                      <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ term.title }}</p>
+                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ term.sub }}</p>
+                    </label>
+                  </li>
+                }
+              </ul>
+            </form>
+
+            <!-- Indicateur progression -->
+            <div class="mt-5 flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 px-4 py-3">
+              @for (ctrl of ['acceptClarity','acceptOneTime','acceptDpa']; track ctrl; let i = $index) {
+                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-all"
+                     [class.bg-primary]="form.get(ctrl)?.value"
+                     [class.text-white]="form.get(ctrl)?.value"
+                     [class.bg-slate-200]="!form.get(ctrl)?.value"
+                     [class.dark:bg-slate-700]="!form.get(ctrl)?.value"
+                     [class.text-slate-400]="!form.get(ctrl)?.value">
+                  {{ i + 1 }}
+                </div>
+              }
+              <p class="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                @if (!canSubmit()) {
+                  {{ lang.t().restore.termsProgress }}
+                } @else {
+                  <span class="font-semibold text-emerald-600 dark:text-emerald-400">
+                    {{ lang.t().restore.termsAllDone }}
+                  </span>
+                }
+              </p>
+            </div>
+          </section>
+        }
+      </div>
+
+      <!-- ══ COLONNE DROITE ══ -->
+      @if (!isOwner()) {
+
+        <!-- Panneau paiement (visible si pas encore dans l'étape confirm) -->
+        @if (!payerConfirmStep() && payerConfirmed() != true) {
+          <div class="lg:col-span-5">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-800
+                        bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-lg lg:sticky lg:top-24">
+
+              <h2 class="mb-6 text-xl font-bold text-slate-900 dark:text-white">
+                {{ lang.t().restore.checkoutTitle }}
+              </h2>
+
+              <!-- Récapitulatif tarif -->
+              <div class="mb-6 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-4">
+                <div class="mb-2 flex items-center justify-between">
+                  <span class="text-sm text-slate-500 dark:text-white">
+                    {{ lang.t().restore.feeLabel }}
+                  </span>
+                  <span class="text-sm font-medium dark:text-primary"
+                        [class.line-through]="hasDiscount()"
+                        [class.text-slate-400]="hasDiscount()"
+                        [class.text-slate-900]="!hasDiscount()">
+                    {{ itemBasePrice() }}
+                  </span>
+                </div>
+
+                @if (hasDiscount()) {
+                  <div class="mb-2 flex items-center justify-between">
+                    <span class="text-sm text-slate-500 dark:text-slate-400">{{ lang.t().restore.reduceTxt }}</span>
+                    <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                      − {{ discountLabel() }}
+                    </span>
+                  </div>
+                }
+
+                <div class="mt-3 border-t border-slate-200 dark:border-slate-700 pt-3
+                            flex items-center justify-between">
+                  <span class="font-bold text-slate-900 dark:text-white">
+                    {{ lang.t().restore.totalLabel }}
+                  </span>
+                  <span class="text-2xl font-black text-primary">{{ itemSubCatPrice() }}</span>
+                </div>
+              </div>
+
+              <!-- Formulaire paiement -->
+              <div class="space-y-4" [formGroup]="form" novalidate>
+
+                <!-- Opérateurs dynamiques -->
+                <div>
+                  <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider
+                                text-slate-500 dark:text-slate-400">
+                    {{ lang.t().restore.operatorLabel }}
+                  </label>
+
+                  @if (countryProviderSvc.isLoading()) {
+                    <div class="grid grid-cols-3 gap-2">
+                      @for (s of [1,2,3]; track s) {
+                        <div class="h-20 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse"></div>
+                      }
+                    </div>
+                  } @else if (availableProviders().length === 0) {
+                    <p class="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20
+                              rounded-lg px-3 py-2">
+                      {{ lang.t().restore.emptyOperator }}
+                    </p>
+                  } @else {
+                    <div class="grid grid-cols-3 gap-2">
+                      @for (op of availableProviders(); track op.provider) {
+                        <button type="button"
+                          (click)="selectOperator(op.provider)"
+                          class="flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3
+                                text-xs font-semibold transition-all"
+                          [class.border-primary]="form.controls.mobileOperator.value === op.provider"
+                          [class.bg-primary/5]="form.controls.mobileOperator.value === op.provider"
+                          [class.text-primary]="form.controls.mobileOperator.value === op.provider"
+                          [class.border-slate-200]="form.controls.mobileOperator.value !== op.provider"
+                          [class.dark:border-slate-700]="form.controls.mobileOperator.value !== op.provider"
+                          [class.text-slate-600]="form.controls.mobileOperator.value !== op.provider"
+                          [class.dark:text-slate-400]="form.controls.mobileOperator.value !== op.provider">
+                          @if (op.logo) {
+                            <img [src]="op.logo" [alt]="op.displayName"
+                              class="h-7 w-7 rounded-full object-contain">
+                          } @else {
+                            <span class="flex h-7 w-7 items-center justify-center rounded-full
+                                          bg-slate-400 text-white text-[10px] font-black">
+                              {{ op.displayName.slice(0, 2).toUpperCase() }}
+                            </span>
+                          }
+                          {{ op.displayName }}
+                        </button>
+                      }
+                    </div>
+                  }
+
+                  @if (form.controls.mobileOperator.invalid && form.controls.mobileOperator.touched) {
+                    <p class="mt-1 text-xs text-red-400">{{ lang.t().restore.errorOperator }}</p>
+                  }
+                </div>
+
+                <!-- Téléphone -->
+                <div>
+                  <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider
+                                text-slate-500 dark:text-slate-400" for="phoneNumber">
+                    {{ lang.t().restore.phoneLabel }}
+                  </label>
+                  <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2
+                                text-slate-400 pointer-events-none">phone</span>
+                    <input id="phoneNumber" formControlName="phoneNumber"
+                      type="tel" inputmode="numeric" placeholder="+237 6XX XXX XXX"
+                      class="w-full rounded-lg border border-slate-200 dark:border-slate-700
+                            bg-slate-50 dark:bg-slate-800
+                            pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-white
+                            placeholder:text-slate-400 outline-none transition
+                            focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      [class.border-red-400]="form.controls.phoneNumber.invalid && form.controls.phoneNumber.touched">
+                  </div>
+                  @if (form.controls.phoneNumber.invalid && form.controls.phoneNumber.touched) {
+                    <p class="mt-1 text-xs text-red-400">{{ lang.t().restore.errorPhone }}</p>
+                  }
+                </div>
+
+                <!-- Statut paiement temps réel -->
+                @if (paymentStarted() && paymentStatus()) {
+                  <div class="rounded-lg border px-4 py-3 text-sm"
+                      [class.border-amber-200]="paymentStatus()!.status === 'ACCEPTED' || paymentStatus()!.status === 'SUBMITTED' || paymentStatus()!.status === 'IN_RECONCILIATION'"
+                      [class.bg-amber-50]="paymentStatus()!.status === 'ACCEPTED' || paymentStatus()!.status === 'SUBMITTED' || paymentStatus()!.status === 'IN_RECONCILIATION'"
+                      [class.text-amber-700]="paymentStatus()!.status === 'ACCEPTED' || paymentStatus()!.status === 'SUBMITTED' || paymentStatus()!.status === 'IN_RECONCILIATION'"
+                      [class.dark:bg-amber-950\/30]="paymentStatus()!.status === 'ACCEPTED'"
+                      [class.border-emerald-200]="paymentStatus()!.status === 'COMPLETED'"
+                      [class.bg-emerald-50]="paymentStatus()!.status === 'COMPLETED'"
+                      [class.text-emerald-700]="paymentStatus()!.status === 'COMPLETED'"
+                      [class.border-red-200]="paymentStatus()!.status === 'FAILED' || paymentStatus()!.status === 'REJECTED'"
+                      [class.bg-red-50]="paymentStatus()!.status === 'FAILED' || paymentStatus()!.status === 'REJECTED'"
+                      [class.text-red-700]="paymentStatus()!.status === 'FAILED' || paymentStatus()!.status === 'REJECTED'">
+                    <div class="flex items-center gap-2">
+                      @if (isPolling()) {
+                        <span class="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+                      } @else if (paymentStatus()!.status === 'COMPLETED') {
+                        <span class="material-symbols-outlined text-lg">check_circle</span>
+                      } @else {
+                        <span class="material-symbols-outlined text-lg">error</span>
+                      }
+                      <span class="font-medium">
+                        @switch (paymentStatus()!.status) {
+                          @case ('ACCEPTED')          { {{ lang.t().restore.paymentAccepted }} }
+                          @case ('SUBMITTED')         { En cours de traitement... }
+                          @case ('IN_RECONCILIATION') { Réconciliation en cours... }
+                          @case ('COMPLETED')         { {{ lang.t().restore.paymentConfirmed }} }
+                          @case ('FAILED')            { {{ lang.t().restore.paymentFailed }} }
+                          @case ('REJECTED')          { {{ lang.t().restore.paymentRejected }} }
+                          @default                    { {{ lang.t().restore.verificationInProgress }} }
+                        }
+                      </span>
+                    </div>
+                  </div>
+                }
+
+                <!-- Info push -->
+                @if (!paymentStarted()) {
+                  <div class="flex items-start gap-2 rounded-lg bg-primary/5 border border-primary/20 p-3">
+                    <span class="material-symbols-outlined text-primary text-lg shrink-0 mt-0.5">notifications_active</span>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                      {{ lang.t().restore.pushInfo }}
+                    </p>
+                  </div>
+                }
+
+                <!-- Erreur serveur -->
+                @if (serverError()) {
+                  <div class="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200
+                              dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                    {{ serverError() }}
+                  </div>
+                }
+
+                <!-- Bouton paiement -->
+                @if (item()?.status === 'ACTIVE' && !paymentStarted()) {
+                  <button type="button" (click)="submit()"
+                    class="mt-2 w-full rounded-lg py-4 font-bold
+                          flex items-center justify-center gap-2 transition-all duration-200"
+                    [class.bg-primary]="canSubmit()"
+                    [class.hover:bg-primary/90]="canSubmit()"
+                    [class.text-white]="canSubmit()"
+                    [class.shadow-lg]="canSubmit()"
+                    [class.bg-slate-200]="!canSubmit()"
+                    [class.dark:bg-slate-700]="!canSubmit()"
+                    [class.text-slate-400]="!canSubmit()"
+                    [class.cursor-not-allowed]="!canSubmit()"
+                    [disabled]="!canSubmit() || isSubmitting()">
+                    @if (isSubmitting()) {
+                      <span class="material-symbols-outlined animate-spin text-xl">progress_activity</span>
+                      {{ lang.t().restore.payProcessing }}
+                    } @else if (!canSubmit()) {
+                      <span class="material-symbols-outlined text-xl">lock</span>
+                      {{ lang.t().restore.payLocked }}
+                    } @else {
+                      <span class="material-symbols-outlined text-xl">smartphone</span>
+                      {{ lang.t().restore.payBtn }}
+                    }
+                  </button>
+                }
+
+                @if (!canSubmit() && !paymentStarted()) {
+                  <p class="text-center text-xs text-slate-400 dark:text-slate-500">
+                    {{ lang.t().restore.payHint }}
+                  </p>
+                }
+              </div>
+
+              <!-- Badges sécurité -->
+              <div class="mt-5 flex items-center justify-center gap-6 border-t border-slate-100 dark:border-slate-800 pt-4">
+                <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                  <span class="material-symbols-outlined text-sm">verified_user</span>
+                  {{ lang.t().restore.badgeSecure }}
+                </div>
+                <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                  <span class="material-symbols-outlined text-sm">encrypted</span>
+                  {{ lang.t().restore.badgeEncrypted }}
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Panneau illustration (visible pendant l'étape confirm, avant décision) -->
+        @if (payerConfirmStep() && (payerConfirmed() === null || payerConfirmed() === false)) {
+          <div class="lg:col-span-5">
+            <div class="relative h-full min-h-[280px] sm:min-h-[400px] overflow-hidden rounded-2xl">
+              <img loading="lazy" src="assets/images/quest.png"
+                   alt="Vérification du document"
+                   class="absolute inset-0 h-full w-full object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+              <div class="relative z-10 flex h-full items-end p-6 sm:p-8">
+                <div>
+                  <h3 class="text-xl sm:text-2xl font-bold text-white">Vérification du document</h3>
+                  <p class="mt-2 max-w-md text-sm text-white/80">
+                    Regardez attentivement le document ci-contre et confirmez en utilisant les boutons au-dessus.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Panneau succès après confirmation -->
+        @if (payerConfirmed() === true) {
+          <div class="lg:col-span-5">
+            <div class="rounded-xl border border-emerald-200 dark:border-emerald-800
+                         bg-white dark:bg-slate-900 p-6 shadow-lg lg:sticky lg:top-24 text-center">
+              <span class="material-symbols-outlined block mx-auto mb-4 text-6xl text-emerald-500"
+                    style="font-variation-settings:'FILL' 1">check_circle</span>
+              <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Restauration confirmée</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                Votre document a été confirmé. Le propriétaire a été notifié et un chat de coordination a été ouvert.
+              </p>
+              <div class="flex flex-col gap-3">
+                <a type="button" routerLink="/app/chat"
+                  class="w-full rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white
+                         hover:bg-primary/90 transition-colors">
+                  Aller au chat
+                </a>
+              </div>
+            </div>
+          </div>
+        }
+
+      } @else {
+        <!-- Propriétaire du document -->
+        <div class="lg:col-span-5">
+          <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900
+                       p-6 shadow-lg lg:sticky lg:top-24 text-center py-12">
+            <span class="material-symbols-outlined block mx-auto mb-4 text-6xl text-slate-400">block</span>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">
+              {{ lang.t().restore.paymentDisable }}
+            </h3>
+            <div class="mt-4 text-2xl mb-2">🛡️</div>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">
+              {{ lang.t().restore.ownerCanPay }}
+            </p>
+            <div class="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-4 border border-emerald-200 dark:border-emerald-800">
+              <h3 class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+                {{ lang.t().restore.ownerAmount }}: {{ founderPrice() }} {{ currency() }}
+              </h3>
+              <p class="text-slate-500 dark:text-slate-400 text-sm">
+                {{ lang.t().restore.ownerPhoneInformation }}
+                <span class="font-bold text-yellow-500">{{ Userphone() }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      }
+
+    </div>
+  }<!-- fin @if item() -->
+
+  <!-- ══ MODAL SUCCÈS CONFIRMATION ══ -->
+@if (payerConfirmed() === true) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px)">
+    <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900
+                shadow-2xl overflow-hidden text-center p-8 animate-slide-up">
+
+      <!-- Icône succès -->
+      <div class="mx-auto mb-5 flex h-20 w-20 items-center justify-center
+                  rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+        <span class="material-symbols-outlined text-5xl text-emerald-500"
+              style="font-variation-settings:'FILL' 1">check_circle</span>
+      </div>
+
+      <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">
+        Restauration confirmée !
+      </h3>
+      <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-7">
+        Le propriétaire a été notifié. Un chat de coordination a été ouvert pour vous deux.
+      </p>
+
+      <div class="flex flex-col gap-3">
+        <button (click)="router.navigate(['/app/chat'])"
+          class="w-full rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white
+                 hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-lg">chat</span>
+          Accéder au chat
+        </button>
+        <button type="button" (click)="router.navigate(['/app/documents'])"
+          class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                 py-3 text-sm font-semibold text-slate-500 dark:text-slate-400
+                 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+          Retour à mes documents
+        </button>
+      </div>
+    </div>
+  </div>
+}
+ 
+<!-- ══ MODAL REJET ══ -->
+
+@if (showRejectModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px)"
+       role="dialog"
+       aria-modal="true"
+       [attr.aria-label]="lang.t().restore.rejectModalTitle ?? 'Paiement rejeté'">
+ 
+    <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900
+                shadow-2xl overflow-hidden text-center animate-slide-up">
+ 
+      <!-- Bande supérieure colorée -->
+      <div class="h-1.5 w-full bg-gradient-to-r from-amber-400 via-orange-400 to-red-400"></div>
+ 
+      <div class="p-8">
+ 
+        <!-- Icône -->
+        <div class="mx-auto mb-5 flex h-20 w-20 items-center justify-center
+                    rounded-full bg-amber-50 dark:bg-amber-900/20
+                    border-2 border-amber-200 dark:border-amber-700">
+          <span class="material-symbols-outlined text-5xl text-amber-500"
+                style="font-variation-settings:'FILL' 1">cancel</span>
+        </div>
+ 
+        <!-- Titre -->
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">
+          {{ lang.t().restore.rejectModalTitle ?? 'Document rejeté' }}
+        </h3>
+ 
+        <!-- Message principal -->
+        <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+          {{ lang.t().restore.rejectModalMessage ?? 'Vous avez signalé que ce document ne vous appartient pas.' }}
+        </p>
+ 
+        <!-- Bloc info remboursement -->
+        <div class="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/30
+                    border border-amber-200 dark:border-amber-800/40
+                    rounded-xl px-4 py-3 mb-7 text-left">
+          <span class="material-symbols-outlined text-amber-500 text-lg mt-0.5 flex-shrink-0"
+                style="font-variation-settings:'FILL' 1">info</span>
+          <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            {{ lang.t().restore.rejectModalRefundInfo ?? 'Un remboursement a été initié. Le montant sera restitué sous 24 à 48 heures selon votre opérateur Mobile Money.' }}
+          </p>
+        </div>
+ 
+        <!-- Actions -->
+        <div class="flex flex-col gap-3">
+ 
+          <!-- Bouton principal → page de recherche -->
+          <button
+            type="button"
+            (click)="closeRejectModal()"
+            class="w-full flex items-center justify-center gap-2 py-3.5 px-6
+                   bg-primary hover:bg-primary/90
+                   text-white font-bold rounded-2xl
+                   shadow-md shadow-primary/20
+                   transition-all duration-200 active:scale-95">
+            <span class="material-symbols-outlined text-xl">search</span>
+            {{ lang.t().restore.rejectModalSearchBtn ?? 'Rechercher un autre document' }}
+          </button>
+ 
+          <!-- Bouton secondaire → mes documents -->
+          <button
+            type="button"
+            (click)="router.navigate(['/app/documents'])"
+            class="w-full flex items-center justify-center gap-2 py-3 px-6
+                   bg-slate-100 hover:bg-slate-200
+                   dark:bg-slate-800 dark:hover:bg-slate-700
+                   text-slate-600 dark:text-slate-300 font-semibold rounded-2xl
+                   transition-all duration-200 active:scale-95 text-sm">
+            <span class="material-symbols-outlined text-base">folder_open</span>
+            {{ lang.t().restore.rejectModalDocumentsBtn ?? 'Mes documents' }}
+          </button>
+ 
+        </div>
+ 
+      </div>
+ 
+      <!-- Bande inférieure -->
+      <div class="h-1 w-full bg-gradient-to-r from-red-400 via-orange-400 to-amber-400"></div>
+ 
+    </div>
+  </div>
+}
+
+  <!-- ══ MODAL PIN ══ -->
+  @if (showPinModal()) {
+    <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px)">
+
+      <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900
+                   shadow-2xl overflow-hidden animate-slide-up">
+
+        <div class="relative bg-slate-900 dark:bg-slate-950 px-6 pt-8 pb-6 text-center">
+          <div class="relative inline-flex items-center justify-center">
+            <div class="h-20 w-20 rounded-2xl bg-slate-800 flex items-center justify-center shadow-lg">
+              <span class="material-symbols-outlined text-5xl text-white">smartphone</span>
+            </div>
+            <span class="absolute -top-1 -right-1 flex h-5 w-5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span class="relative inline-flex h-5 w-5 rounded-full bg-primary items-center justify-center">
+                <span class="material-symbols-outlined text-white text-xs">{{ lang.t().restore.modalNotification }}</span>
+              </span>
+            </span>
+          </div>
+
+          <h3 class="mt-4 text-lg font-bold text-white">
+            {{ lang.t().restore.modalPayTitle }}
+          </h3>
+          <p class="mt-1 text-sm text-slate-400">
+            {{ lang.t().restore.modalPayText }}
+            <span class="font-semibold text-white">
+              {{ selectedProvider()?.nameDisplayedToCustomer ?? selectedProvider()?.displayName }}
+            </span>
+          </p>
+
+          @if (selectedProvider()?.logo) {
+            <div class="mt-3 flex items-center justify-center gap-2">
+              <img [src]="selectedProvider()!.logo"
+                   [alt]="selectedProvider()!.displayName"
+                   class="h-8 w-8 rounded-full object-contain bg-white p-0.5">
+              <span class="text-xs text-slate-400">{{ selectedProvider()!.displayName }}</span>
+            </div>
+          }
+
+          <div class="mt-4 flex items-center justify-center gap-2 text-primary">
+            <span class="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+            <span class="text-xs text-slate-400">{{ lang.t().restore.modalAwatingConfirmation }}</span>
+          </div>
+        </div>
+
+        <!-- Corps : instructions PIN -->
+        <div class="px-6 py-5">
+          @for (channel of pinInstructions(); track channel.type) {
+            <div class="mb-4">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+                {{ channel.displayName['fr'] }}
+              </p>
+              <ol class="space-y-2">
+                @for (step of channel.instructions['fr']; track $index) {
+                  <li class="flex items-center gap-3">
+                    <span class="flex h-6 w-6 shrink-0 items-center justify-center
+                                 rounded-full bg-primary text-white text-xs font-bold">
+                      {{ $index + 1 }}
+                    </span>
+                    @if (channel.variables?.shortCode && step.text.includes(channel.variables!.shortCode)) {
+                      <span class="text-sm text-slate-700 dark:text-slate-300">
+                        {{ step.text.split(channel.variables!.shortCode)[0] }}
+                        <code class="rounded bg-primary/10 text-primary px-1.5 py-0.5 font-mono font-bold text-xs">
+                          {{ channel.variables!.shortCode }}
+                        </code>
+                        {{ step.text.split(channel.variables!.shortCode)[1] }}
+                      </span>
+                    } @else {
+                      <span class="text-sm text-slate-700 dark:text-slate-300">{{ step.text }}</span>
+                    }
+                  </li>
+                }
+              </ol>
+            </div>
+          }
+
+          <button type="button" (click)="showPinModal.set(false)"
+            class="mt-2 w-full rounded-xl border border-slate-200 dark:border-slate-700
+                   py-3 text-sm font-semibold text-slate-600 dark:text-slate-400
+                   hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+            {{ lang.t().restore.modalUserApproveModalInformation }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

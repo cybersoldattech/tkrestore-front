@@ -1,0 +1,141 @@
+<div class="min-h-screen bg-base-100 flex items-center justify-center p-4">
+  <div class="card w-full max-w-md bg-base-200 border border-base-300 shadow-xl">
+    <div class="card-body p-6 sm:p-8">
+      
+      <!-- Icon -->
+      <div class="w-14 h-14 sm:w-18 sm:h-18 bg-gradient-to-br from-[#FF7A00] to-[#191970] rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg">
+        <span class="material-symbols-outlined text-white text-3xl sm:text-4xl" style="font-variation-settings: 'FILL' 0">
+          lock
+        </span>
+      </div>
+
+      <!-- Header -->
+      <h1 class="text-xl sm:text-2xl font-semibold text-base-content text-center mb-2">
+        Vérifiez votre email
+      </h1>
+      <p class="text-sm text-base-content/60 text-center mb-8">
+        {{ email() || 'Un code a été envoyé à votre adresse' }}
+      </p>
+
+      <!-- Form -->
+      <form [formGroup]="form" (ngSubmit)="verify()">
+        
+        <label class="block text-xs font-medium text-base-content/50 text-center uppercase tracking-wider mb-3">
+          Code OTP (6 chiffres)
+        </label>
+
+        <!-- OTP Inputs -->
+        <div class="grid grid-cols-6 gap-2 mb-6">
+          <input
+            #otpInput
+            class="input input-bordered input-lg w-full text-center text-xl font-bold h-12 bg-base-100 border-2 focus:border-[#FF7A00] focus:shadow-[0_0_0_3px_rgba(255,122,0,0.18)] outline-none transition-all duration-200"
+            formControlName="otp1"
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            autocomplete="one-time-code"
+            (input)="onInput($event, 1)"
+            (keydown)="onKeydown($event, 1)"
+            (paste)="handlePaste($event)"
+          />
+          <input
+            class="input input-bordered input-lg w-full text-center text-xl font-bold h-12 bg-base-100 border-2 focus:border-[#FF7A00] focus:shadow-[0_0_0_3px_rgba(255,122,0,0.18)] outline-none transition-all duration-200"
+            formControlName="otp2"
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            (input)="onInput($event, 2)"
+            (keydown)="onKeydown($event, 2)"
+            (paste)="handlePaste($event)"
+          />
+          <input
+            class="input input-bordered input-lg w-full text-center text-xl font-bold h-12 bg-base-100 border-2 focus:border-[#FF7A00] focus:shadow-[0_0_0_3px_rgba(255,122,0,0.18)] outline-none transition-all duration-200"
+            formControlName="otp3"
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            (input)="onInput($event, 3)"
+            (keydown)="onKeydown($event, 3)"
+            (paste)="handlePaste($event)"
+          />
+          <input
+            class="input input-bordered input-lg w-full text-center text-xl font-bold h-12 bg-base-100 border-2 focus:border-[#FF7A00] focus:shadow-[0_0_0_3px_rgba(255,122,0,0.18)] outline-none transition-all duration-200"
+            formControlName="otp4"
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            (input)="onInput($event, 4)"
+            (keydown)="onKeydown($event, 4)"
+            (paste)="handlePaste($event)"
+          />
+          <input
+            class="input input-bordered input-lg w-full text-center text-xl font-bold h-12 bg-base-100 border-2 focus:border-[#FF7A00] focus:shadow-[0_0_0_3px_rgba(255,122,0,0.18)] outline-none transition-all duration-200"
+            formControlName="otp5"
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            (input)="onInput($event, 5)"
+            (keydown)="onKeydown($event, 5)"
+            (paste)="handlePaste($event)"
+          />
+          <input
+            class="input input-bordered input-lg w-full text-center text-xl font-bold h-12 bg-base-100 border-2 focus:border-[#FF7A00] focus:shadow-[0_0_0_3px_rgba(255,122,0,0.18)] outline-none transition-all duration-200"
+            formControlName="otp6"
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            (input)="onInput($event, 6)"
+            (keydown)="onKeydown($event, 6)"
+            (paste)="handlePaste($event)"
+          />
+        </div>
+
+        <!-- Error Message -->
+        <p class="text-sm text-red-500 text-center mb-4 min-h-[1.25rem]">
+          @if (form.errors?.['otpMismatch'] && form.touched) {
+            Code complet requis (6 chiffres)
+          }
+          @if (error()) {
+            {{ error() }}
+          }
+        </p>
+
+        <!-- Bouton Vérifier -->
+        <button
+          type="submit"
+          class="btn btn-primary w-full h-12 text-white rounded-xl bg-gradient-to-r from-[#FF7A00] to-[#e86e00] border-none text-base font-semibold shadow-md hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+          [disabled]="loading() || !form.valid">
+          @if (loading()) {
+            <span class="loading loading-spinner loading-sm"></span>
+            <span>Vérification...</span>
+          } @else {
+            <span>Vérifier le code</span>
+          }
+        </button>
+
+        <!-- Bouton Renvoyer -->        <!-- Bouton Renvoyer --> 
+        <button
+          type="button"
+          class="btn btn-ghost w-full h-10 rounded-xl border-2 border-base-300 text-base-content font-medium hover:bg-base-300 hover:border-[#FF7A00] transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-6"
+          (click)="resend()"
+          [disabled]="resendLoading() || resendCooldown() > 0">
+          @if (resendLoading()) {
+            <span class="loading loading-spinner loading-sm"></span>
+            <span>Envoi en cours...</span>
+          } @else if (resendCooldown() > 0) {
+            Renvoyer dans {{ resendCooldown() }}s
+          } @else {
+            Renvoyer le code
+          }
+        </button>
+
+      </form>
+
+      <!-- Retour -->
+      <a routerLink="/auth/login" class="block text-center text-sm text-base-content/60 hover:text-base-content transition-colors">
+        ← Retour connexion
+      </a>
+
+    </div>
+  </div>
+</div>

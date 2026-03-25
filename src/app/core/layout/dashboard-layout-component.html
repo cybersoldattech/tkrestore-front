@@ -1,0 +1,441 @@
+<!--
+  LAYOUT STRUCTURE
+  Desktop (lg+) : sidebar dans le flux (relative, width animée)
+  Mobile (<lg)  : drawer fixed hors-flux, fermé par défaut
+                  hamburger dans le header → ouvre le drawer
+-->
+<div class="flex h-screen overflow-hidden bg-[#f5f4f0] dark:bg-[#081629]
+            text-slate-900 dark:text-slate-100">
+
+  <!-- SIDEBAR DESKTOP  (dans le flux, jamais fixed) -->
+  <aside
+    class="hidden lg:flex flex-col shrink-0
+           border-r border-slate-200 dark:border-slate-800
+           bg-white dark:bg-[#0B1F3A]
+           transition-[width] duration-300 ease-in-out overflow-hidden"
+    [style.width]="sidebarCollapsed() ? '72px' : '260px'"
+    aria-label="Navigation principale">
+    <ng-container [ngTemplateOutlet]="sidebarTpl" [ngTemplateOutletContext]="{ mobile: false }"></ng-container>
+  </aside>
+
+  <!-- SIDEBAR MOBILE : overlay backdrop -->
+  @if (mobileDrawerOpen()) {
+    <div class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+         (click)="closeMobileDrawer()" aria-hidden="true"></div>
+  }
+
+  <!-- SIDEBAR MOBILE : drawer panel (fixed, hors-flux) -->
+  <aside
+    class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col
+           border-r border-slate-200 dark:border-slate-800
+           bg-white dark:bg-[#0B1F3A]
+           transition-transform duration-300 ease-in-out lg:hidden"
+    [class.-translate-x-full]="!mobileDrawerOpen()"
+    [class.translate-x-0]="mobileDrawerOpen()"
+    aria-label="Navigation mobile"
+    [attr.aria-hidden]="!mobileDrawerOpen()">
+    <ng-container [ngTemplateOutlet]="sidebarTpl" [ngTemplateOutletContext]="{ mobile: true }"></ng-container>
+  </aside>
+
+  
+  <div class="flex flex-1 flex-col overflow-hidden min-w-0">
+
+    <!-- Top bar -->
+    <header class="flex h-16 shrink-0 items-center justify-between gap-4
+                   border-b border-slate-200 dark:border-slate-800
+                   bg-white dark:bg-[#0B1F3A] px-4 sm:px-6">
+
+      <div class="flex items-center gap-3">
+
+        
+        <button type="button"
+          class="flex h-9 w-9 items-center justify-center rounded-lg
+                 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800
+                 transition-colors lg:hidden"
+          (click)="openMobileDrawer()"
+          aria-label="Ouvrir le menu"
+          [attr.aria-expanded]="mobileDrawerOpen()">
+          <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+        </button>
+
+        <!-- Logo visible dans le header mobile -->
+        <a routerLink="/" class="flex items-center gap-2 lg:hidden" aria-label="Accueil">
+          <svg width="28" height="28" viewBox="0 0 70 80" fill="none" aria-hidden="true">
+            <path d="M10 0 L50 0 L62 12 L62 80 L10 80 Z" fill="#FF7A00"/>
+            <path d="M50 0 L50 12 L62 12 Z" fill="#cc6200"/>
+            <circle cx="28" cy="46" r="20" fill="white" stroke="#0B1F3A" stroke-width="5"/>
+            <line x1="43" y1="61" x2="57" y2="75" stroke="#0B1F3A" stroke-width="6" stroke-linecap="round"/>
+            <text x="28" y="47" text-anchor="middle" dominant-baseline="central"
+                  font-family="Inter,sans-serif" font-size="15" font-weight="700" fill="#0B1F3A">Tk</text>
+          </svg>
+          <span class="text-base font-extrabold">
+            <span class="text-[#0B1F3A] dark:text-white">Tk</span><span class="text-[#FF7A00]">restore</span>
+          </span>
+        </a>
+
+        <!-- Breadcrumb desktop -->
+        <div class="hidden lg:flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+          <span class="material-symbols-outlined text-base" aria-hidden="true">home</span>
+          <span aria-hidden="true">/</span>
+          <span class="font-semibold text-slate-900 dark:text-white">{{ lang.t().nav.dashboard }}</span>
+        </div>
+      </div>
+
+      <!-- Controls droite -->
+      <div class="flex items-center gap-1.5">
+
+        <div class="relative hidden sm:block">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2
+                       text-slate-400 text-lg pointer-events-none" aria-hidden="true">search</span>
+          <input type="search" placeholder="Rechercher / Search…" aria-label="Rechercher"
+            class="h-9 w-44 md:w-56 rounded-lg border border-slate-200 dark:border-slate-700
+                   bg-slate-50 dark:bg-slate-800 pl-9 pr-4 text-sm
+                   text-slate-900 dark:text-white placeholder:text-slate-400
+                   outline-none transition
+                   focus:border-[#FF7A00] focus:ring-2 focus:ring-[#FF7A00]/20">
+        </div>
+
+        <!-- ── Notification bell ── -->
+        <div class="relative">
+          <button type="button"
+            (click)="toggleNotif()"
+            class="relative flex h-9 w-9 items-center justify-center rounded-lg
+                   text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            [attr.aria-expanded]="notifOpen()"
+            aria-label="Notifications">
+            <span class="material-symbols-outlined text-xl" aria-hidden="true">notifications</span>
+            @if (notifSvc.unreadCount() > 0) {
+              <span class="absolute right-1 top-1 flex h-4 w-4 items-center justify-center
+                           rounded-full bg-[#FF7A00] text-[10px] font-bold text-white leading-none"
+                    aria-hidden="true">
+                {{ notifSvc.unreadCount() > 9 ? '9+' : notifSvc.unreadCount() }}
+              </span>
+            } @else {
+              <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#FF7A00]
+                           opacity-0" aria-hidden="true"></span>
+            }
+          </button>
+
+          <!-- Backdrop -->
+          @if (notifOpen()) {
+            <div class="fixed inset-0 z-40" (click)="closeNotif()" aria-hidden="true"></div>
+
+            <!-- Dropdown panel -->
+            <div class="absolute right-0 z-50 mt-2 w-80 sm:w-96 overflow-hidden
+                        rounded-2xl border border-slate-200 dark:border-slate-700
+                        bg-white dark:bg-slate-900 shadow-xl">
+
+              <!-- Header -->
+              <div class="flex items-center justify-between border-b border-slate-100
+                          dark:border-slate-800 px-4 py-3">
+                <h3 class="font-semibold text-sm text-slate-900 dark:text-white">
+                  Notifications
+                  @if (notifSvc.unreadCount() > 0) {
+                    <span class="ml-1.5 rounded-full bg-[#FF7A00]/10 text-[#FF7A00]
+                                 px-2 py-0.5 text-xs font-bold">
+                      {{ notifSvc.unreadCount() }}
+                    </span>
+                  }
+                </h3>
+                @if (notifSvc.unreadCount() > 0) {
+                  <button type="button"
+                    (click)="notifSvc.markAllRead()"
+                    class="text-xs text-primary hover:underline font-medium">
+                    Tout marquer comme lu
+                  </button>
+                }
+              </div>
+
+              <!-- List -->
+              <div class="max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+
+                @if (notifSvc.isLoading()) {
+                  <div class="flex items-center justify-center py-10">
+                    <span class="material-symbols-outlined animate-spin text-2xl text-slate-300">
+                      progress_activity
+                    </span>
+                  </div>
+                } @else if (notifSvc.notifications().length === 0) {
+                  <div class="flex flex-col items-center justify-center py-10 text-center px-4">
+                    <span class="material-symbols-outlined text-4xl text-slate-300 mb-2">
+                      notifications_off
+                    </span>
+                    <p class="text-sm text-slate-400">Aucune notification</p>
+                  </div>
+                } @else {
+                  @for (notif of notifSvc.notifications(); track notif.id) {
+                    <div
+                      class="flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors
+                             hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                      [class.bg-primary/5]="!notif.read_at"
+                      (click)="notifSvc.markRead(notif.id)">
+
+                      <!-- Icon -->
+                      <div class="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl mt-0.5"
+                           [class.bg-primary/10]="!notif.read_at"
+                           [class.bg-slate-100]="!!notif.read_at"
+                           [class.dark:bg-slate-800]="!!notif.read_at">
+                        <span class="material-symbols-outlined text-lg"
+                              [class.text-primary]="!notif.read_at"
+                              [class.text-slate-400]="!!notif.read_at"
+                              style="font-variation-settings:'FILL' 1">
+                          {{ notifIcon(notif.type) }}
+                        </span>
+                      </div>
+
+                      <!-- Content -->
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm leading-snug"
+                           [class.font-semibold]="!notif.read_at"
+                           [class.text-slate-900]="!notif.read_at"
+                           [class.dark:text-white]="!notif.read_at"
+                           [class.text-slate-500]="!!notif.read_at">
+                          {{ notif.data?.message ?? 'Nouvelle notification' }}
+                        </p>
+                        <p class="mt-0.5 text-xs text-slate-400">
+                          {{ notif.created_at | date:'d MMM, HH:mm' }}
+                        </p>
+                      </div>
+
+                      <!-- Unread dot -->
+                      @if (!notif.read_at) {
+                        <div class="shrink-0 mt-1.5 h-2 w-2 rounded-full bg-primary"></div>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+
+              <!-- Footer -->
+              <div class="border-t border-slate-100 dark:border-slate-800 px-4 py-2.5">
+                <a routerLink="/app/chat"
+                   (click)="closeNotif()"
+                   class="flex items-center justify-center gap-1 text-xs text-primary
+                          font-medium hover:underline py-1">
+                  <span class="material-symbols-outlined text-sm">chat_bubble</span>
+                  Voir tous mes messages
+                </a>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Lang switcher -->
+        <div class="relative">
+          <button type="button"
+            class="flex h-9 items-center gap-1.5 rounded-lg
+                   border border-slate-200 dark:border-slate-700
+                   bg-white dark:bg-slate-800 px-2.5 text-xs font-semibold
+                   hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            (click)="toggleLangMenu()" [attr.aria-expanded]="langMenuOpen()" aria-label="Langue">
+            <span class="inline-block h-3.5 w-5 overflow-hidden rounded-sm" [innerHTML]="getCurrentFlagSvg()"></span>
+            <span class="hidden sm:inline uppercase">{{ lang.currentLang().code }}</span>
+            <span class="material-symbols-outlined text-sm leading-none" aria-hidden="true">expand_more</span>
+          </button>
+          @if (langMenuOpen()) {
+            <div class="fixed inset-0 z-40" (click)="langMenuOpen.set(false)" aria-hidden="true"></div>
+            <ul class="absolute right-0 z-50 mt-1 w-32 overflow-hidden rounded-xl
+                       border border-slate-200 bg-white shadow-xl
+                       dark:border-slate-700 dark:bg-slate-800" role="menu">
+              @for (l of languages; track l.code) {
+                <li role="none">
+                  <button type="button" role="menuitem"
+                    class="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium
+                           transition hover:bg-slate-50 dark:hover:bg-slate-700"
+                    [class.text-orange-500]="lang.currentCode() === l.code"
+                    (click)="selectLang(l.code)">
+                    <span class="inline-block h-3.5 w-5 overflow-hidden rounded-sm" [innerHTML]="getFlagSvg(l)"></span>
+                    {{ l.label }}
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        <!-- Theme toggle -->
+        <button type="button"
+          class="flex h-9 w-9 items-center justify-center rounded-lg
+                 border border-slate-200 dark:border-slate-700
+                 bg-white dark:bg-slate-800
+                 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          (click)="toggleTheme()"
+          [attr.aria-pressed]="isDark()"
+          [attr.aria-label]="isDark() ? 'Mode clair' : 'Mode sombre'">
+          <span class="material-symbols-outlined text-lg" aria-hidden="true">
+            {{ isDark() ? 'light_mode' : 'dark_mode' }}
+          </span>
+        </button>
+
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <!-- Force scrollbar verticale sur le contenu principal -->
+    <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 primary-scrollbar">
+      <router-outlet />
+    </main>
+
+  </div>
+</div>
+
+
+<ng-template #sidebarTpl let-mobile="mobile">
+
+  <!-- Logo row -->
+  <div class="flex h-16 shrink-0 items-center border-b border-slate-200 dark:border-slate-800 px-4"
+       [class.justify-between]="mobile || !sidebarCollapsed()"
+       [class.justify-center]="!mobile && sidebarCollapsed()">
+
+    @if (mobile || !sidebarCollapsed()) {
+      <a [routerLink]="'/'" class="flex items-center gap-2.5" aria-label="Accueil">
+        <svg width="30" height="30" viewBox="0 0 70 80" fill="none" aria-hidden="true">
+          <path d="M10 0 L50 0 L62 12 L62 80 L10 80 Z" fill="#FF7A00"/>
+          <path d="M50 0 L50 12 L62 12 Z" fill="#cc6200"/>
+          <circle cx="28" cy="46" r="20" fill="white" stroke="#0B1F3A" stroke-width="5"/>
+          <line x1="43" y1="61" x2="57" y2="75" stroke="#0B1F3A" stroke-width="6" stroke-linecap="round"/>
+          <text x="28" y="47" text-anchor="middle" dominant-baseline="central"
+                font-family="Inter,sans-serif" font-size="15" font-weight="700" fill="#0B1F3A">Tk</text>
+        </svg>
+        <span class="text-lg font-extrabold tracking-tight whitespace-nowrap">
+          <span class="text-[#0B1F3A] dark:text-white">Tk</span><span class="text-[#FF7A00]">restore</span>
+        </span>
+      </a>
+    } @else {
+      <a routerLink="/app/dashboard" aria-label="Accueil">
+        <svg width="30" height="30" viewBox="0 0 70 80" fill="none" aria-hidden="true">
+          <path d="M10 0 L50 0 L62 12 L62 80 L10 80 Z" fill="#FF7A00"/>
+          <path d="M50 0 L50 12 L62 12 Z" fill="#cc6200"/>
+          <circle cx="28" cy="46" r="20" fill="white" stroke="#0B1F3A" stroke-width="5"/>
+          <line x1="43" y1="61" x2="57" y2="75" stroke="#0B1F3A" stroke-width="6" stroke-linecap="round"/>
+          <text x="28" y="47" text-anchor="middle" dominant-baseline="central"
+                font-family="Inter,sans-serif" font-size="15" font-weight="700" fill="#0B1F3A">Tk</text>
+        </svg>
+      </a>
+    }
+
+    <!-- Fermer (mobile) / Réduire (desktop étendu) -->
+    @if (mobile) {
+      <button type="button"
+        class="flex h-8 w-8 items-center justify-center rounded-lg
+               text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        (click)="closeMobileDrawer()" aria-label="Fermer le menu">
+        <span class="material-symbols-outlined text-xl" aria-hidden="true">close</span>
+      </button>
+    } @else if (!sidebarCollapsed()) {
+      <button type="button"
+        class="flex h-8 w-8 items-center justify-center rounded-lg
+               text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        (click)="toggleSidebar()" aria-label="Réduire le menu">
+        <span class="material-symbols-outlined text-xl" aria-hidden="true">chevron_left</span>
+      </button>
+    }
+  </div>
+
+  <!-- Expand button (desktop collapsed) -->
+  @if (!mobile && sidebarCollapsed()) {
+    <div class="flex justify-center py-2">
+      <button type="button"
+        class="flex h-8 w-8 items-center justify-center rounded-lg
+               text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        (click)="toggleSidebar()" aria-label="Agrandir le menu">
+        <span class="material-symbols-outlined text-xl" aria-hidden="true">chevron_right</span>
+      </button>
+    </div>
+  }
+
+  <!-- Nav links -->
+  <nav class="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden p-3 no-scrollbar"
+       aria-label="Menu principal">
+    @for (item of navItems(); track item.route) {
+      <a
+        [routerLink]="item.route"
+        routerLinkActive="bg-[#FF7A00]/10 text-[#FF7A00] font-semibold"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm
+               text-slate-600 dark:text-slate-400 transition-all
+               hover:bg-slate-100 hover:text-slate-900
+               dark:hover:bg-slate-800 dark:hover:text-white"
+        [class.justify-center]="!mobile && sidebarCollapsed()"
+        [attr.title]="(!mobile && sidebarCollapsed()) ? item.label : null"
+        [attr.aria-label]="item.label"
+        (click)="mobile ? closeMobileDrawer() : null">
+        <span class="material-symbols-outlined shrink-0 text-xl" aria-hidden="true">{{ item.icon }}</span>
+        @if (mobile || !sidebarCollapsed()) {
+          <span class="flex-1 truncate">{{ item.label }}</span>
+          @if (item.badge) {
+            <span class="flex h-5 min-w-5 items-center justify-center rounded-full
+                         bg-[#FF7A00] px-1.5 text-[10px] font-bold text-white">
+             {{ item.badge > 99 ? '99+' : item.badge }}
+            </span>
+          }
+        } @else if (item.badge) {
+          <span class="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center
+                       rounded-full bg-[#FF7A00] text-[9px] font-bold text-white px-1">
+            {{ item.badge }}
+          </span>
+        }
+      </a>
+    }
+  </nav>
+
+  <!-- Bottom: settings + user card -->
+  <div class="shrink-0 border-t border-slate-200 dark:border-slate-800 p-3 space-y-1">
+
+    @for (item of bottomItems(); track item.route) {
+      <a [routerLink]="item.route"
+         routerLinkActive="bg-[#FF7A00]/10 text-[#FF7A00]"
+         class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm
+                text-slate-600 dark:text-slate-400 transition-all
+                hover:bg-slate-100 hover:text-slate-900
+                dark:hover:bg-slate-800 dark:hover:text-white"
+         [class.justify-center]="!mobile && sidebarCollapsed()"
+         [attr.title]="(!mobile && sidebarCollapsed()) ? item.label : null"
+         (click)="mobile ? closeMobileDrawer() : null">
+        <span class="material-symbols-outlined shrink-0 text-xl" aria-hidden="true">{{ item.icon }}</span>
+        @if (mobile || !sidebarCollapsed()) {
+          <span class="truncate">{{ item.label }}</span>
+        }
+      </a>
+    }
+
+    <!-- User card -->
+    <div class="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 p-2 mt-1"
+         [class.justify-center]="!mobile && sidebarCollapsed()">
+      <div class="relative shrink-0">
+        <div class="flex h-9 w-9 items-center justify-center rounded-full
+                    bg-[#FF7A00] text-sm font-bold text-white select-none overflow-hidden">
+          @if (userAvatar()) {
+            <img loading="lazy" [src]="userAvatar()" [alt]="userName()" class="h-full w-full object-cover">
+          } @else {
+            {{ userInitials() }}
+          }
+        </div>
+        <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500
+                     ring-2 ring-white dark:ring-slate-800" aria-hidden="true"></span>
+      </div>
+      @if (mobile || !sidebarCollapsed()) {
+        <div class="flex-1 min-w-0">
+          <p class="truncate text-sm font-semibold text-slate-900 dark:text-white">{{ userName() }}</p>
+          <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ userEmail() }}</p>
+        </div>
+      }
+    </div>
+
+    <button type="button"
+      (click)="logout()"
+      class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+             text-red-600 dark:text-red-400 transition-colors mt-1
+             hover:bg-red-50 dark:hover:bg-red-900/20"
+      [class.justify-center]="!mobile && sidebarCollapsed()"
+      [attr.title]="(!mobile && sidebarCollapsed()) ? 'Déconnexion' : null"
+      aria-label="Déconnexion">
+      <span class="material-symbols-outlined shrink-0 text-xl" aria-hidden="true">logout</span>
+      @if (mobile || !sidebarCollapsed()) {
+        <span>{{ lang.t().nav.logout }}</span>
+      }
+    </button>
+
+  </div>
+
+</ng-template>

@@ -1,0 +1,392 @@
+<!-- Hero — inchangé -->
+<section class="relative mb-16 overflow-hidden rounded-3xl">
+  <div class="absolute inset-0 bg-gradient-to-br from-[#FF7A00]/20 to-transparent pointer-events-none"></div>
+  <div class="relative z-10 grid items-center gap-12 px-6 py-14 lg:grid-cols-2 md:px-12 lg:py-20">
+    <div class="space-y-8">
+      <div class="inline-flex items-center gap-2 rounded-full border border-[#FF7A00]/20 bg-[#FF7A00]/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#FF7A00]">
+        <span class="relative flex h-2 w-2" aria-hidden="true">
+          <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF7A00] opacity-75"></span>
+          <span class="relative inline-flex h-2 w-2 rounded-full bg-[#FF7A00]"></span>
+        </span>
+        {{ lang.t().home.badge }}
+      </div>
+      <h1 class="text-4xl font-black leading-[1.1] tracking-tight text-secondary dark:text-white md:text-5xl lg:text-6xl">
+        {{ lang.t().home.heroTitle }}<span class="text-[#FF7A00]">{{ lang.t().home.heroHighlight }}</span>
+      </h1>
+      <p class="max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-400">{{ lang.t().home.heroSub }}</p>
+      <div class="flex flex-col gap-4 sm:flex-row">
+        <a routerLink="/app/declare-found"
+           class="flex items-center justify-center gap-2 rounded-xl bg-[#FF7A00] px-8 py-4 text-base font-bold text-background-dark shadow-xl shadow-[#FF7A00]/20 transition-all hover:bg-[#FF7A00]/90">
+          <span class="material-symbols-outlined" aria-hidden="true">add_circle</span>
+          {{ lang.t().home.ctaDeclare }} 
+        </a>
+        <a routerLink="/about"
+           class="glass-effect flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-8 py-4 text-base font-bold transition-all hover:bg-white/10 dark:border-white/10 dark:bg-white/5">
+          {{ lang.t().home.ctaBrowse }}
+        </a> 
+      </div>
+    </div>
+
+    <div class="relative hidden lg:block" aria-hidden="true">
+      <!-- Glow background -->
+      <div class="absolute -inset-6 rounded-full bg-[#FF7A00]/30 blur-3xl"></div>
+
+      <div class="relative aspect-[4/3] overflow-hidden rounded-2xl border-4 border-white/5 bg-slate-800 shadow-2xl">
+        <!-- Gradient overlay -->
+        <div class="absolute inset-0 bg-gradient-to-tr from-slate-900 via-slate-800 to-[#FF7A00]/50 opacity-70"></div>
+
+        <!-- Icon -->
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div>
+              <img loading="lazy" src="assets/images/home.png" alt="Illustration de sécurité des données"
+              class="w-full max-w-sm opacity-80"/>  
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+
+  <!-- Grille de cards — même style que search.page -->
+  @if (!recent24hLoading() && recent24hItems().length > 0) {
+    <section class= "my-4">
+      <div class="space-y-1 my-4">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{{ lang.t().home.recentTitle }}</h2>
+        <p class="text-slate-500 dark:text-slate-400">{{ lang.t().home.recentSub }}</p>
+      </div>
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        @for (item of recent24hItems(); track item.id) {
+          <article
+            class="group flex cursor-pointer flex-col overflow-hidden rounded-2xl
+                  border border-slate-100 dark:border-slate-800
+                  bg-white dark:bg-slate-800/40
+                  shadow-sm transition-all duration-300
+                  hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF7A00]/5"
+            [routerLink]="['/app/restore', item.id]">
+    
+            <!-- Image floue -->
+            <div class="relative h-48 overflow-hidden bg-slate-200 dark:bg-slate-700">
+    
+              @if (item && item.images && item?.images?.length) {
+                <img
+                  [src]="item.images[0].blurred_url"
+                  [alt]="'Document de ' + item.name_on_item"
+                  class="h-full w-full object-cover opacity-60 blur-sm transition-transform
+                        duration-500 group-hover:scale-110 group-hover:opacity-75"
+                  loading="lazy"
+                >
+              } @else {
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">
+                    description
+                  </span>
+                </div>
+              }
+    
+              <!-- Badge sous-catégorie (CNI, Passeport...) -->
+              <div class="absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-bold
+                          uppercase tracking-wide backdrop-blur-md"
+                  [class]="badgeClass(item.sub_category?.name ?? '')">
+                {{ item.sub_category?.name ?? 'Document' }}
+              </div>
+    
+              <!-- Badge "Retrouvé" -->
+              <div class="absolute right-3 top-3 flex items-center gap-1 rounded-full
+                          bg-emerald-500/90 px-2.5 py-1 text-[10px] font-black
+                          uppercase tracking-wider text-white backdrop-blur-md shadow-sm">
+                <span class="material-symbols-outlined text-xs leading-none" aria-hidden="true"
+                      style="font-variation-settings:'FILL' 1">where_to_vote</span>
+                {{ lang.t().home.foundBadge }}
+              </div>
+    
+              <!-- Overlay hover -->
+              <div class="absolute inset-0 flex items-center justify-center
+                          opacity-0 transition-opacity group-hover:opacity-100">
+                <span class="rounded-lg bg-white/90 px-4 py-2 text-sm font-bold
+                              text-[#FF7A00] shadow-lg dark:bg-slate-900/90">
+                  {{ lang.t().home.viewDetails }}
+                </span>
+              </div>
+            </div>
+    
+            <!-- Infos carte -->
+            <div class="flex flex-1 flex-col p-5">
+              <h3 class="mb-3 text-base font-bold leading-snug text-slate-900 dark:text-white
+                          transition-colors group-hover:text-[#FF7A00]">
+                {{ item.name_on_item || item.title }}
+              </h3>
+    
+              <div class="mt-auto space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined shrink-0 text-base" aria-hidden="true">location_on</span>
+                  <span class="truncate">{{ item.location }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined shrink-0 text-base" aria-hidden="true">calendar_today</span>
+                  <span>{{ lang.t().home.foundOn }} {{ formatDate(item.event_date) }}</span>
+                </div>
+              </div>
+    
+              <!-- CTA -->
+              <a [routerLink]="['/app/restore', item.id]"
+                class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl
+                        bg-slate-100 dark:bg-slate-700/50 py-2.5 text-sm font-bold
+                        text-slate-700 dark:text-slate-300 transition-all
+                        hover:bg-[#FF7A00] hover:text-white dark:hover:bg-[#FF7A00] dark:hover:text-white"
+                (click)="$event.stopPropagation()">
+                <span class="material-symbols-outlined text-base" aria-hidden="true">open_in_new</span>
+                {{ lang.t().home.viewDetails }}
+              </a>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+  }
+
+
+
+<!-- ══ SECTION RÉCENTS — MODIFIÉE ══ -->
+<div class="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+  <!-- <div class="space-y-1">
+    <h2 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{{ lang.t().home.recentTitle }}</h2>
+    <p class="text-slate-500 dark:text-slate-400">{{ lang.t().home.recentSub }}</p>
+  </div> -->
+  <!-- Onglets — remplace l'ancien @for (cat of categories) -->
+  <div class="no-scrollbar flex gap-2 overflow-x-auto pb-2 md:pb-0" role="tablist">
+
+    @if (loadingSubCats()) {
+      <!-- Skeleton onglets -->
+      @for (i of [1,2,3,4,5]; track i) {
+        <div class="h-9 w-24 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700"></div>
+      }
+    } @else {
+      @for (tab of tabs(); track tab.id) {
+        <button type="button" role="tab"
+                (click)="setTab(tab.id)"
+                [attr.aria-selected]="activeTab() === tab.id"
+                class="whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+                [class]="activeTab() === tab.id
+                  ? 'bg-[#FF7A00] text-white font-bold shadow-md shadow-[#FF7A00]/20'
+                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'">
+          {{ tab.name }}
+        </button>
+      }
+    }
+
+  </div>
+</div>
+
+<!-- Skeleton loading -->
+@if (isLoading()) {
+  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    @for (i of [1,2,3,4]; track i) {
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800
+                   bg-white dark:bg-slate-800/40 animate-pulse">
+        <div class="aspect-video bg-slate-200 dark:bg-slate-700"></div>
+        <div class="p-5 space-y-3">
+          <div class="h-4 w-3/4 rounded bg-slate-200 dark:bg-slate-700"></div>
+          <div class="h-3 w-1/2 rounded bg-slate-200 dark:bg-slate-700"></div>
+          <div class="h-3 w-2/3 rounded bg-slate-200 dark:bg-slate-700"></div>
+          <div class="h-10 w-full rounded-xl bg-slate-200 dark:bg-slate-700 mt-4"></div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Erreur -->
+@if (hasError()) {
+  <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed
+               border-slate-200 dark:border-slate-700 py-16 text-center">
+    <span class="material-symbols-outlined mb-3 text-5xl text-slate-300 dark:text-slate-600">wifi_off</span>
+    <p class="font-semibold text-slate-500 dark:text-slate-400"> Impossible de charger les documents</p>
+    <button type="button" (click)="loadRecentItems()"
+            class="mt-4 rounded-xl bg-[#FF7A00] px-6 py-2 text-sm font-bold text-white hover:bg-[#FF7A00]/90">
+      Réessayer
+    </button>
+  </div>
+}
+
+<!-- État vide -->
+@if (!isLoading() && !hasError() && filteredItems().length === 0) {
+  <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed
+               border-slate-200 dark:border-slate-700 py-16 text-center">
+    <span class="material-symbols-outlined mb-3 text-5xl text-slate-300 dark:text-slate-600">search_off</span>
+    <p class="font-semibold text-slate-500 dark:text-slate-400">Aucun document trouvé pour cette catégorie</p>
+  </div>
+}
+
+<!-- Grille de cards — même style que search.page -->
+@if (!isLoading() && !hasError() && filteredItems().length > 0) {
+  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    @for (item of filteredItems(); track item.id) {
+      <article
+        class="group flex cursor-pointer flex-col overflow-hidden rounded-2xl
+               border border-slate-100 dark:border-slate-800
+               bg-white dark:bg-slate-800/40
+               shadow-sm transition-all duration-300
+               hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#FF7A00]/5"
+        [routerLink]="['/app/restore', item.id]">
+ 
+        <!-- Image floue -->
+        <div class="relative h-48 overflow-hidden bg-slate-200 dark:bg-slate-700">
+ 
+          @if (item && item.images && item?.images?.length) {
+            <img
+              [src]="item.images[0].blurred_url"
+              [alt]="'Document de ' + item.name_on_item"
+              class="h-full w-full object-cover opacity-60 blur-sm transition-transform
+                     duration-500 group-hover:scale-110 group-hover:opacity-75"
+              loading="lazy"
+            >
+          } @else {
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">
+                description
+              </span>
+            </div>
+          }
+ 
+          <!-- Badge sous-catégorie (CNI, Passeport...) -->
+          <div class="absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-bold
+                       uppercase tracking-wide backdrop-blur-md"
+               [class]="badgeClass(item.sub_category?.name ?? '')">
+            {{ item.sub_category?.name ?? 'Document' }}
+          </div>
+ 
+          <!-- Badge "Retrouvé" -->
+          <div class="absolute right-3 top-3 flex items-center gap-1 rounded-full
+                       bg-emerald-500/90 px-2.5 py-1 text-[10px] font-black
+                       uppercase tracking-wider text-white backdrop-blur-md shadow-sm">
+            <span class="material-symbols-outlined text-xs leading-none" aria-hidden="true"
+                  style="font-variation-settings:'FILL' 1">where_to_vote</span>
+            {{ lang.t().home.foundBadge }}
+          </div>
+ 
+          <!-- Overlay hover -->
+          <div class="absolute inset-0 flex items-center justify-center
+                       opacity-0 transition-opacity group-hover:opacity-100">
+            <span class="rounded-lg bg-white/90 px-4 py-2 text-sm font-bold
+                          text-[#FF7A00] shadow-lg dark:bg-slate-900/90">
+              {{ lang.t().home.viewDetails }}
+            </span>
+          </div>
+        </div>
+ 
+        <!-- Infos carte -->
+        <div class="flex flex-1 flex-col p-5">
+          <h3 class="mb-3 text-base font-bold leading-snug text-slate-900 dark:text-white
+                      transition-colors group-hover:text-[#FF7A00]">
+            {{ item.name_on_item || item.title }}
+          </h3>
+ 
+          <div class="mt-auto space-y-2 text-sm text-slate-500 dark:text-slate-400">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined shrink-0 text-base" aria-hidden="true">location_on</span>
+              <span class="truncate">{{ item.location }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined shrink-0 text-base" aria-hidden="true">calendar_today</span>
+              <span>{{ lang.t().home.foundOn }} {{ formatDate(item.event_date) }}</span>
+            </div>
+          </div>
+ 
+          <!-- CTA -->
+          <a [routerLink]="['/app/restore', item.id]"
+             class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl
+                    bg-slate-100 dark:bg-slate-700/50 py-2.5 text-sm font-bold
+                    text-slate-700 dark:text-slate-300 transition-all
+                    hover:bg-[#FF7A00] hover:text-white dark:hover:bg-[#FF7A00] dark:hover:text-white"
+             (click)="$event.stopPropagation()">
+            <span class="material-symbols-outlined text-base" aria-hidden="true">open_in_new</span>
+            {{ lang.t().home.viewDetails }}
+          </a>
+        </div>
+      </article>
+    }
+  </div>
+ 
+  <!-- Load more -->
+  <div class="mt-12 flex justify-center">
+    <a type="button" routerLink="/search"
+      class="rounded-xl border border-slate-200 dark:border-slate-800
+             px-8 py-3 font-bold text-slate-700 dark:text-slate-300
+             transition-all hover:bg-slate-100 dark:hover:bg-slate-800">
+      {{ lang.t().home.loadMore }}
+    </a>
+  </div>
+
+}
+
+<section class="py-16 px-4 text-center">
+  <h2 class="text-3xl font-medium text-slate-900 dark:text-white mb-2">
+      {{ lang.t().home.whyChoose }} <span class="text-[#FF7A00]">TKRESTORE</span> ?
+  </h2>
+  <p class="text-slate-500 dark:text-slate-400 italic mb-10 text-base">
+      {{ lang.t().home.slogan }}
+  </p>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+
+    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary dark:bg-emerald-900/40">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>
+        </svg>
+      </div>
+      <div class="text-center sm:text-left">
+        <p class="text-2xl font-medium text-slate-900 dark:text-white">{{ formatNumber(homeStats().countries_count) }}+</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed"> {{ lang.t().home.countriesDescription }}</p>
+        <p class="text-xs text-secondary dark:text-emerald-400 font-medium mt-1">{{ lang.t().home.countriesLabel }}</p>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary dark:bg-emerald-900/40">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2a5 5 0 00-10 0v2m10 0H7m8-13a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+      </div>
+      <div class="text-center sm:text-left">
+        <p class="text-2xl font-medium text-slate-900 dark:text-white">{{ formatNumber(homeStats().users_count) }}</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed"> {{ lang.t().home.usersDescription }}</p>
+        <p class="text-xs text-secondary dark:text-emerald-400 font-medium mt-1"> {{ lang.t().home.usersLabel }}</p>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary dark:bg-emerald-900/40">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 11l18-8-8 18-2-8-8-2z"/>
+        </svg>
+      </div>
+      <div class="text-center sm:text-left">
+        <p class="text-2xl font-medium text-slate-900 dark:text-white">{{ formatNumber(homeStats().items_active_matched_count) }}</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{{ lang.t().home.publicationsDescription }}</p>
+        <p class="text-xs text-secondary dark:text-emerald-400 font-medium mt-1">{{ lang.t().home.publicationsLabel }}</p>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary dark:bg-emerald-900/40">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 4v6h6M20 20v-6h-6M5.64 18.36A9 9 0 1021 12M18.36 5.64A9 9 0 003 12"/>
+        </svg>
+      </div>
+      <div class="text-center sm:text-left">
+        <p class="text-2xl font-medium text-slate-900 dark:text-white">{{ formatNumber(homeStats().documents_refunded_count) }}</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{{ lang.t().home.restorationsDescription }}</p>
+        <p class="text-xs text-secondary dark:text-emerald-400 font-medium mt-1"> {{ lang.t().home.restorationsLabel }}</p>
+      </div>
+    </div>
+
+  </div>
+</section>

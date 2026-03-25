@@ -1,0 +1,674 @@
+<div class="mx-auto w-full space-y-16">
+
+  <!-- ══ EN-TÊTE ══ -->
+  <header>
+    <h1 class="mb-3 text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white md:text-5xl">
+      {{ lang.t().settings.title }}
+    </h1>
+    <p class="max-w-xl text-lg leading-relaxed text-slate-500 dark:text-slate-400">
+      {{ lang.t().settings.subtitle }}
+    </p>
+  </header>
+
+  <!-- ══ PROFIL ══ -->
+  <section class="grid grid-cols-1 gap-8 lg:grid-cols-12" aria-labelledby="profile-heading">
+    <!-- Description -->
+    <div class="lg:col-span-4">
+      <h2 id="profile-heading"
+          class="mb-2 text-xl font-bold text-slate-900 dark:text-white">
+        {{ lang.t().settings.profileTitle }}
+      </h2>
+      <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        {{ lang.t().settings.profileSub }}
+      </p>
+    </div>
+
+    <!-- Formulaire profil -->
+    <div class="lg:col-span-8">
+      <div class="rounded-2xl border border-slate-100 dark:border-slate-800
+                   bg-white dark:bg-[#0d2444] p-8 shadow-sm">
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate
+              class="space-y-6">
+
+          <!-- Nom complet + Username -->
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+
+            <!-- Nom complet -->
+            <div class="space-y-2">
+              <label for="full_name"
+                     class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {{ lang.t().settings.full_name }}
+                <span class="text-primary">*</span>
+              </label>
+              <input
+                id="full_name"
+                type="text"
+                formControlName="full_name"
+                [placeholder]="lang.t().settings.full_namePlaceholder"
+                autocomplete="name"
+                class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                       bg-slate-50 dark:bg-slate-800/60
+                       px-4 py-3 text-sm text-slate-900 dark:text-white
+                       placeholder:text-slate-400 dark:placeholder:text-slate-500
+                       outline-none transition
+                       focus:border-primary focus:ring-2 focus:ring-primary/20"
+                [class.border-red-400]="profileForm.controls.full_name.invalid && profileForm.controls.full_name.touched"
+              >
+              @if (profileForm.controls.full_name.invalid && profileForm.controls.full_name.touched) {
+                <p class="text-xs text-red-400" role="alert">{{ lang.t().settings.errorRequired }}</p>
+              }
+            </div>
+
+            <!-- Username -->
+            <div class="space-y-2">
+              <label for="username"
+                     class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {{ lang.t().settings.username }}
+                <span class="text-primary">*</span>
+              </label>
+              <div class="relative">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2
+                             text-sm font-semibold text-slate-400 dark:text-slate-500
+                             pointer-events-none select-none">@</span>
+                <input
+                  id="username"
+                  type="text"
+                  formControlName="username"
+                  [placeholder]="lang.t().settings.usernamePlaceholder"
+                  autocomplete="username"
+                  class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                         bg-slate-50 dark:bg-slate-800/60
+                         pl-8 pr-4 py-3 text-sm text-slate-900 dark:text-white
+                         placeholder:text-slate-400 dark:placeholder:text-slate-500
+                         outline-none transition
+                         focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  [class.border-red-400]="profileForm.controls.username.invalid && profileForm.controls.username.touched"
+                >
+                @if (fieldError('username', profileErrors())) {
+                  <p class="text-xs text-red-400">{{ fieldError('username', profileErrors()) }}</p>
+                }
+              </div>
+              @if (profileForm.controls.username.invalid && profileForm.controls.username.touched) {
+                <p class="text-xs text-red-400" role="alert">
+                  @if (profileForm.controls.username.hasError('required')) {
+                    {{ lang.t().settings.errorRequired }}
+                  } @else if (profileForm.controls.username.hasError('pattern')) {
+                    {{ lang.t().settings.errorUsernamePattern }}
+                  } @else {
+                    {{ lang.t().settings.errorUsernameMin }}
+                  }
+                </p>
+              }
+            </div>
+          </div>
+
+          <!-- Email (lecture seule) + Téléphone -->
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+
+            <!-- Email — non éditable -->
+            <div class="space-y-2">
+              <label for="email"
+                     class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {{ lang.t().settings.email }}
+                <span class="ml-1.5 rounded-full bg-slate-100 dark:bg-slate-700
+                              px-2 py-0.5 text-[10px] font-bold
+                              text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                  {{ lang.t().settings.emailReadOnly }}
+                </span>
+              </label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2
+                             text-lg text-slate-400 dark:text-slate-500 pointer-events-none"
+                      aria-hidden="true">lock</span>
+                <input
+                  id="email"
+                  type="email"
+                  [value]="userEmail()"
+                  readonly
+                  disabled
+                  class="w-full cursor-not-allowed rounded-xl border border-slate-200 dark:border-slate-700
+                         bg-slate-100 dark:bg-slate-800/30
+                         pl-10 pr-4 py-3 text-sm
+                         text-slate-500 dark:text-slate-500
+                         outline-none"
+                  [attr.aria-label]="lang.t().settings.emailReadOnlyAria"
+                >
+              </div>
+              <p class="text-xs text-slate-400 dark:text-slate-500">
+                {{ lang.t().settings.emailReadOnlyHint }}
+              </p>
+            </div>
+
+            <!-- Téléphone -->
+            <div class="space-y-2">
+              <label for="phone"
+                     class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {{ lang.t().settings.phone }}
+              </label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2
+                             text-lg text-slate-400 dark:text-slate-500 pointer-events-none"
+                      aria-hidden="true">phone</span>
+                <input
+                  id="phone"
+                  type="tel"
+                  formControlName="phone"
+                  placeholder="+237 6XX XXX XXX"
+                  autocomplete="tel"
+                  class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                         bg-slate-50 dark:bg-slate-800/60
+                         pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-white
+                         placeholder:text-slate-400 dark:placeholder:text-slate-500
+                         outline-none transition
+                         focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  [class.border-red-400]="profileForm.controls.phone.invalid && profileForm.controls.phone.touched"
+                >
+              </div>
+              @if (profileForm.controls.phone.invalid && profileForm.controls.phone.touched) {
+                <p class="text-xs text-red-400" role="alert">{{ lang.t().settings.errorPhonePattern }}</p>
+              }
+            </div>
+            </div>
+
+            <!-- Langue -->
+            <div class="space-y-2 md:col-span-2">
+              <label for="language"
+                     class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {{ lang.t().settings.language }}
+                <span class="text-primary">*</span>
+              </label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2
+                             text-lg text-slate-400 dark:text-slate-500 pointer-events-none" aria-hidden="true">language</span>
+                <select
+                  id="language"
+                  
+                  formControlName="language"
+                  class="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700
+                         bg-slate-50 dark:bg-slate-800/60
+                         pl-10 pr-8 py-3 text-sm text-slate-900 dark:text-white
+                         outline-none transition cursor-pointer
+                         focus:border-primary focus:ring-2 focus:ring-primary/20
+                         [>option]:text-slate-900 [>option]:dark:text-white"
+                  [class.border-red-400]="profileForm.controls.language.invalid && profileForm.controls.language.touched"
+                >
+                  <option value="fr">Français</option>
+                  <option value="en">English</option>
+                </select>
+                <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2
+                             text-lg text-slate-400 dark:text-slate-500 pointer-events-none">
+                  expand_more
+                </span>
+              </div>
+              @if (profileForm.controls.language.invalid && profileForm.controls.language.touched) {
+                <p class="text-xs text-red-400" role="alert">{{ lang.t().settings.errorRequired }}</p>
+              }
+            </div>
+
+            <!-- Pays -->
+            <div class="space-y-2 md:col-span-2">
+
+              <label for="country_code"
+                     class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {{ lang.t().auth.country || 'Pays' }}
+                <span class="text-primary">*</span>
+              </label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2
+                             text-lg text-slate-400 dark:text-slate-500 pointer-events-none"
+                      aria-hidden="true">public</span>
+                <select
+                  id="country_code"
+                  
+                  formControlName="country_code"
+                  class="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700
+                         bg-slate-50 dark:bg-slate-800/60
+                         pl-10 pr-8 py-3 text-sm text-slate-900 dark:text-white
+                         outline-none transition cursor-pointer
+                         focus:border-primary focus:ring-2 focus:ring-primary/20
+                         [>option]:text-slate-900 [>option]:dark:text-white"
+                  [class.border-red-400]="profileForm.controls.country_code.invalid && profileForm.controls.country_code.touched"
+                >
+                  <option value="">Sélectionnez votre pays</option>
+                  @for (country of countries; track country.code) {
+                    <option [value]="country.code">
+                      {{ country.flag }} {{ country.name }}
+                    </option>
+                  }
+                </select>
+                <!-- Custom arrow -->
+                <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2
+                             text-lg text-slate-400 dark:text-slate-500 pointer-events-none">
+                  expand_more
+                </span>
+              </div>
+              @if (profileForm.controls.country_code.invalid && profileForm.controls.country_code.touched) {
+                <p class="text-xs text-red-400" role="alert">{{ lang.t().settings.errorRequired || 'Pays requis' }}</p>
+              }
+              @if (fieldError('country_code', profileErrors())) {
+                <p class="text-xs text-red-400">{{ fieldError('country_code', profileErrors()) }}</p>
+              }
+            </div>
+
+
+          <!-- Bouton sauvegarder -->
+          <div class="flex justify-end border-t border-slate-100 dark:border-slate-800 pt-5">
+            <button type="submit"
+              class="flex items-center gap-2 rounded-xl bg-primary px-8 py-3
+                     font-bold text-white shadow-md shadow-primary/20 transition-all
+                     hover:bg-primary/90 active:scale-95
+                     disabled:cursor-not-allowed disabled:opacity-60"
+              [disabled]="savingProfile()">
+              @if (savingProfile()) {
+                <span class="material-symbols-outlined animate-spin text-lg" aria-hidden="true">progress_activity</span>
+              } @else {
+                <span class="material-symbols-outlined text-lg" aria-hidden="true">save</span>
+              }
+              {{ savingProfile() ? lang.t().settings.saving : lang.t().settings.saveProfile }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ MOT DE PASSE ══ -->
+  <section class="grid grid-cols-1 gap-8 lg:grid-cols-12" aria-labelledby="password-heading">
+    <div class="lg:col-span-4">
+      <h2 id="password-heading"
+          class="mb-2 text-xl font-bold text-slate-900 dark:text-white">
+        {{ lang.t().settings.passwordTitle }}
+      </h2>
+      <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        {{ lang.t().settings.passwordSub }}
+      </p>
+    </div>
+
+    <div class="lg:col-span-8">
+      <div class="rounded-2xl border border-slate-100 dark:border-slate-800
+                   bg-white dark:bg-[#0d2444] p-8 shadow-sm">
+        <form [formGroup]="passwordForm" (ngSubmit)="savePassword()" novalidate
+              class="space-y-5">
+
+          <!-- Mot de passe actuel -->
+          <div class="space-y-2">
+            <label for="currentPassword"
+                   class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+              {{ lang.t().settings.currentPassword }}
+              <span class="text-primary">*</span>
+            </label>
+            <div class="relative">
+              <input
+                id="currentPassword"
+                [type]="showCurrent() ? 'text' : 'password'"
+                formControlName="currentPassword"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                       bg-slate-50 dark:bg-slate-800/60
+                       px-4 py-3 pr-11 text-sm text-slate-900 dark:text-white
+                       placeholder:text-slate-400 outline-none transition
+                       focus:border-primary focus:ring-2 focus:ring-primary/20"
+                [class.border-red-400]="passwordForm.controls.currentPassword.invalid && passwordForm.controls.currentPassword.touched"
+              >
+              <button type="button"
+                (click)="showCurrent.update(v => !v)"
+                [attr.aria-pressed]="showCurrent()"
+                [attr.aria-label]="lang.t().settings.togglePasswordVisibility"
+                class="absolute inset-y-0 right-3 flex items-center
+                       text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                <span class="material-symbols-outlined text-xl" aria-hidden="true">
+                  {{ showCurrent() ? 'visibility_off' : 'visibility' }}
+                </span>
+              </button>
+            </div>
+            @if (passwordForm.controls.currentPassword.invalid && passwordForm.controls.currentPassword.touched) {
+              <p class="text-xs text-red-400" role="alert">{{ lang.t().settings.errorRequired }}</p>
+            }
+          </div>
+
+          <!-- Séparateur -->
+          <div class="relative flex items-center gap-3 py-1">
+            <div class="flex-1 border-t border-slate-100 dark:border-slate-800"></div>
+            <span class="text-xs text-slate-400 dark:text-slate-500">{{ lang.t().settings.newPasswordSection }}</span>
+            <div class="flex-1 border-t border-slate-100 dark:border-slate-800"></div>
+          </div>
+
+          <!-- Nouveau mot de passe -->
+          <div class="space-y-2">
+            <label for="newPassword"
+                   class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+              {{ lang.t().settings.newPassword }}
+              <span class="text-primary">*</span>
+            </label>
+            <div class="relative">
+              <input
+                id="newPassword"
+                [type]="showNew() ? 'text' : 'password'"
+                formControlName="newPassword"
+                placeholder="••••••••"
+                autocomplete="new-password"
+                class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                       bg-slate-50 dark:bg-slate-800/60
+                       px-4 py-3 pr-11 text-sm text-slate-900 dark:text-white
+                       placeholder:text-slate-400 outline-none transition
+                       focus:border-primary focus:ring-2 focus:ring-primary/20"
+                [class.border-red-400]="passwordForm.controls.newPassword.invalid && passwordForm.controls.newPassword.touched"
+              >
+              <button type="button"
+                (click)="showNew.update(v => !v)"
+                [attr.aria-pressed]="showNew()"
+                [attr.aria-label]="lang.t().settings.togglePasswordVisibility"
+                class="absolute inset-y-0 right-3 flex items-center
+                       text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                <span class="material-symbols-outlined text-xl" aria-hidden="true">
+                  {{ showNew() ? 'visibility_off' : 'visibility' }}
+                </span>
+              </button>
+            </div>
+
+            <!-- Barre de force du mot de passe -->
+            @if (passwordForm.controls.newPassword.value) {
+              <div class="space-y-1.5">
+                <div class="flex gap-1.5">
+                  @for (i of [1,2,3,4]; track i) {
+                    <div class="h-1.5 flex-1 rounded-full transition-all duration-300"
+                         [class.bg-slate-200]="passwordStrength() < i"
+                         [class.dark:bg-slate-700]="passwordStrength() < i"
+                         [class]="passwordStrength() >= i ? strengthColor() : ''">
+                    </div>
+                  }
+                </div>
+                <p class="text-xs font-medium"
+                   [class.text-red-500]="passwordStrength() === 1"
+                   [class.text-amber-500]="passwordStrength() === 2"
+                   [class.text-blue-500]="passwordStrength() === 3"
+                   [class.text-emerald-500]="passwordStrength() === 4">
+                  {{ strengthLabel() }}
+                </p>
+              </div>
+            }
+
+            @if (passwordForm.controls.newPassword.invalid && passwordForm.controls.newPassword.touched) {
+              <p class="text-xs text-red-400" role="alert">{{ lang.t().settings.errorPasswordMin }}</p>
+            }
+          </div>
+
+          <!-- Confirmer le nouveau mot de passe -->
+          <div class="space-y-2">
+            <label for="password_confirmation"
+                   class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+              {{ lang.t().settings.password_confirmation }}
+              <span class="text-primary">*</span>
+            </label>
+            <div class="relative">
+              <input
+                id="password_confirmation"
+                [type]="showConfirm() ? 'text' : 'password'"
+                formControlName="password_confirmation"
+                placeholder="••••••••"
+                autocomplete="new-password"
+                class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                       bg-slate-50 dark:bg-slate-800/60
+                       px-4 py-3 pr-11 text-sm text-slate-900 dark:text-white
+                       placeholder:text-slate-400 outline-none transition
+                       focus:border-primary focus:ring-2 focus:ring-primary/20"
+                [class.border-red-400]="(passwordForm.errors?.['passwordMismatch'] || passwordForm.controls.password_confirmation.invalid) && passwordForm.controls.password_confirmation.touched"
+              >
+              <button type="button"
+                (click)="showConfirm.update(v => !v)"
+                [attr.aria-pressed]="showConfirm()"
+                [attr.aria-label]="lang.t().settings.togglePasswordVisibility"
+                class="absolute inset-y-0 right-3 flex items-center
+                       text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                <span class="material-symbols-outlined text-xl" aria-hidden="true">
+                  {{ showConfirm() ? 'visibility_off' : 'visibility' }}
+                </span>
+              </button>
+            </div>
+
+            @if (passwordForm.errors?.['passwordMismatch'] &&
+                 (passwordForm.controls.password_confirmation.touched || passwordForm.controls.newPassword.touched)) {
+              <p class="text-xs text-red-400" role="alert">{{ lang.t().settings.errorPasswordMismatch }}</p>
+            }
+
+            <!-- Indicateur de correspondance -->
+            @if (passwordForm.controls.password_confirmation.value && !passwordForm.errors?.['passwordMismatch']) {
+              <p class="flex items-center gap-1 text-xs font-medium text-emerald-500">
+                <span class="material-symbols-outlined text-sm" aria-hidden="true"
+                      style="font-variation-settings:'FILL' 1">check_circle</span>
+                {{ lang.t().settings.passwordMatch }}
+              </p>
+            }
+          </div>
+
+          <!-- Bouton changer -->
+          <div class="flex justify-end border-t border-slate-100 dark:border-slate-800 pt-5">
+            <button type="submit"
+              class="flex items-center gap-2 rounded-xl bg-primary px-8 py-3
+                     font-bold text-white shadow-md shadow-primary/20 transition-all
+                     hover:bg-primary/90 active:scale-95
+                     disabled:cursor-not-allowed disabled:opacity-60"
+              [disabled]="savingPassword()">
+              @if (savingPassword()) {
+                <span class="material-symbols-outlined animate-spin text-lg" aria-hidden="true">progress_activity</span>
+              } @else {
+                <span class="material-symbols-outlined text-lg" aria-hidden="true">key</span>
+              }
+              {{ savingPassword() ? lang.t().settings.saving : lang.t().settings.savePassword }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ PRÉFÉRENCES ══ -->
+  <section class="grid grid-cols-1 gap-8 lg:grid-cols-12" aria-labelledby="prefs-heading">
+    <div class="lg:col-span-4">
+      <h2 id="prefs-heading"
+          class="mb-2 text-xl font-bold text-slate-900 dark:text-white">
+        {{ lang.t().settings.prefsTitle }}
+      </h2>
+      <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        {{ lang.t().settings.prefsSub }}
+      </p>
+    </div>
+
+    <div class="lg:col-span-8 space-y-3">
+
+      <!-- Toggle Email -->
+      <div class="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800
+                   bg-white dark:bg-[#0d2444] p-5 shadow-sm
+                   transition-transform hover:-translate-y-px">
+        <div class="flex items-center gap-4">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+            <span class="material-symbols-outlined text-xl text-primary" aria-hidden="true">mail</span>
+          </div>
+          <div>
+            <p class="font-semibold text-slate-900 dark:text-white">
+              {{ lang.t().settings.emailNotifTitle }}
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              {{ lang.t().settings.emailNotifSub }}
+            </p>
+          </div>
+        </div>
+        <!-- Toggle switch -->
+        <button
+          type="button"
+          role="switch"
+          [attr.aria-checked]="emailNotifications()"
+          [attr.aria-label]="lang.t().settings.emailNotifTitle"
+          (click)="toggleEmailNotif()"
+          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center
+                 rounded-full border-2 border-transparent transition-colors duration-200
+                 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                 focus-visible:outline-primary"
+          [class.bg-primary]="emailNotifications()"
+          [class.bg-slate-200]="!emailNotifications()"
+          [class.dark:bg-slate-700]="!emailNotifications()"
+        >
+          <span class="pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow
+                       ring-0 transition-transform duration-200"
+                [class.translate-x-5]="emailNotifications()"
+                [class.translate-x-0]="!emailNotifications()">
+          </span>
+        </button>
+      </div>
+
+      <!-- Toggle 2FA -->
+      <!-- <div class="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800
+                   bg-white dark:bg-[#0d2444] p-5 shadow-sm
+                   transition-transform hover:-translate-y-px">
+        <div class="flex items-center gap-4">
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl
+                       bg-emerald-500/10">
+            <span class="material-symbols-outlined text-xl text-emerald-500" aria-hidden="true">shield</span>
+          </div>
+          <div>
+            <p class="font-semibold text-slate-900 dark:text-white">
+              {{ lang.t().settings.twoFATitle }}
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              {{ lang.t().settings.twoFASub }}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          [attr.aria-checked]="twoFactorEnabled()"
+          [attr.aria-label]="lang.t().settings.twoFATitle"
+          (click)="toggle2FA()"
+          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center
+                 rounded-full border-2 border-transparent transition-colors duration-200
+                 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                 focus-visible:outline-primary"
+          [class.bg-primary]="twoFactorEnabled()"
+          [class.bg-slate-200]="!twoFactorEnabled()"
+          [class.dark:bg-slate-700]="!twoFactorEnabled()"
+        >
+          <span class="pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow
+                       ring-0 transition-transform duration-200"
+                [class.translate-x-5]="twoFactorEnabled()"
+                [class.translate-x-0]="!twoFactorEnabled()">
+          </span>
+        </button>
+      </div> -->
+
+    </div>
+  </section>
+
+  <!-- ══ ZONE DANGER ══ -->
+  <section aria-labelledby="danger-heading" class="relative mt-8">
+    <!-- Fond incliné décoratif -->
+    <div class="absolute inset-0 -z-10 -rotate-1 scale-105 rounded-3xl bg-red-500/5"></div>
+    <!-- Désactivation de compte -->
+    <div class="rounded-3xl border border-red-200 dark:border-red-900/50
+                 bg-white dark:bg-[#0d2444] p-8 md:p-10">
+      <div class="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+        <div class="max-w-lg">
+          <h2 id="danger-heading"
+              class="mb-2 text-xl font-bold text-red-600 dark:text-red-400">
+            {{ lang.t().settings.dangerTitle }}
+          </h2>
+          <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+            {{ lang.t().settings.dangerSub }}
+          </p>
+        </div>
+
+        @if (!showDeactivate()) {
+          <button type="button"
+            class="whitespace-nowrap rounded-xl border-2 border-red-200 dark:border-red-900/50
+                   bg-red-50 dark:bg-red-900/20
+                   px-8 py-3 font-bold text-red-600 dark:text-red-400
+                   transition-all hover:bg-red-600 hover:text-white
+                   dark:hover:bg-red-600 dark:hover:text-white
+                   active:scale-95"
+            (click)="showDeactivate.set(true)"
+            [disabled]="deactivating() || deleting()">
+            {{ lang.t().settings.dangerBtn }}
+          </button>
+        } @else {
+          <!-- Confirmation -->
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 self-center">
+              {{ lang.t().settings.dangerConfirm }}
+            </p>
+            <button type="button"
+              class="rounded-xl bg-red-600 px-6 py-2.5 font-bold text-white
+                     transition-all hover:bg-red-700 active:scale-95"
+              (click)="requestDeactivation()"
+              [disabled]="deactivating() || deleting()">
+              {{ deactivating() ? '...' : lang.t().settings.dangerConfirmYes }}
+            </button>
+            <button type="button"
+              class="rounded-xl border border-slate-200 dark:border-slate-700
+                     bg-white dark:bg-slate-800 px-6 py-2.5 font-bold
+                     text-slate-700 dark:text-slate-300 transition-all
+                     hover:bg-slate-100 dark:hover:bg-slate-700"
+              (click)="showDeactivate.set(false)"
+              [disabled]="deactivating() || deleting()">
+              {{ lang.t().settings.dangerConfirmNo }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Suppression de compte -->
+    <div class="rounded-3xl mt-4 border border-red-200 dark:border-red-900/50
+                 bg-white dark:bg-[#0d2444] p-8 md:p-10">
+      <div class="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+        <div class="max-w-lg">
+          <h2 id="danger-heading"
+              class="mb-2 text-xl font-bold text-red-600 dark:text-red-400">
+            Suppression de compte
+          </h2>
+          <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+            Cette action est irréversible. Vos tokens seront invalidés et votre compte sera supprimé.
+          </p>
+        </div>
+
+        @if (!showDeleteConfirm()) {
+          <button type="button"
+            class="whitespace-nowrap rounded-xl border-2 border-red-200 dark:border-red-900/50
+                   bg-red-50 dark:bg-red-900/20
+                   px-8 py-3 font-bold text-red-600 dark:text-red-400
+                   transition-all hover:bg-red-600 hover:text-white
+                   dark:hover:bg-red-600 dark:hover:text-white
+                   active:scale-95"
+            (click)="showDeleteConfirm.set(true)"
+            [disabled]="deactivating() || deleting()">
+            Supprimer
+          </button>
+        } @else {
+          <!-- Confirmation -->
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 self-center">
+              {{ lang.t().settings.dangerConfirm }}
+            </p>
+            <button type="button"
+              class="rounded-xl bg-red-600 px-6 py-2.5 font-bold text-white
+                     transition-all hover:bg-red-700 active:scale-95"
+              (click)="requestAccountDeletion()"
+              [disabled]="deactivating() || deleting()">
+              {{ deleting() ? '...' : 'Oui, supprimer' }}
+            </button>
+            <button type="button"
+              class="rounded-xl border border-slate-200 dark:border-slate-700
+                     bg-white dark:bg-slate-800 px-6 py-2.5 font-bold
+                     text-slate-700 dark:text-slate-300 transition-all
+                     hover:bg-slate-100 dark:hover:bg-slate-700"
+              (click)="showDeleteConfirm.set(false)"
+              [disabled]="deactivating() || deleting()">
+              {{ lang.t().settings.dangerConfirmNo }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+</div>

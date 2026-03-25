@@ -1,0 +1,116 @@
+<div class="">
+  <div class="w-full  rounded-3xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl
+              shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-white/30 dark:border-slate-700/50">
+
+    <!-- Header -->
+    <div class="p-8 border-b border-slate-200/50 dark:border-slate-700/50">
+      <div class="mx-auto w-16 h-16 flex items-center justify-center rounded-2xl bg-gradient-to-r from-[#FF7A00] to-orange-500 mb-6 shadow-lg">
+        <span class="material-symbols-outlined text-3xl text-white" aria-hidden="true">qr_code</span>
+      </div>
+      <h1 class="text-2xl font-black text-center text-slate-900 dark:text-white mb-2">
+        {{ t().title }}
+      </h1>
+      <p class="text-sm text-center text-slate-500 dark:text-slate-400">
+        {{ t().subtitle }}
+      </p>
+    </div>
+
+    <!-- Form -->
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-8 space-y-6">
+
+      <!-- User Info (readonly) -->
+      <div class="space-y-4">
+        <h3 class="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
+          <span class="material-symbols-outlined text-[#FF7A00]" aria-hidden="true">person</span>
+          {{ t().yourInfo }}
+        </h3>
+
+        <div class="grid grid-cols-1 gap-3">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+              {{ t().name }}
+            </label>
+            <input formControlName="name" type="text"
+                   class="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#FF7A00]/20 focus:border-[#FF7A00]">
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                {{ t().email }}
+              </label>
+              <input formControlName="email" type="email"
+                     class="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#FF7A00]/20 focus:border-[#FF7A00]">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                {{ t().phone }}
+              </label>
+              <input formControlName="phone" type="tel"
+                     class="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#FF7A00]/20 focus:border-[#FF7A00]">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Object Info (editable) -->
+      <div class="space-y-4">
+        <h3 class="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2">
+          <span class="material-symbols-outlined text-[#FF7A00]" aria-hidden="true">inventory_2</span>
+          {{ t().objectInfo }}
+        </h3>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+            {{ t().label }} *
+          </label>
+          <input formControlName="label" type="text"
+                 class="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 focus:ring-2 focus:ring-[#FF7A00]/20 focus:border-[#FF7A00] transition-all"
+                 [class.border-red-300]="f['label'].touched && f['label'].invalid">
+          @if (f['label'].touched && f['label'].invalid) {
+            <p class="mt-1 text-xs text-red-500">{{ lang.t().declare.errorRequired }}</p>
+          }
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+            {{ t().description }} *
+          </label>
+          <textarea formControlName="description" rows="4"
+                    class="w-full rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 resize-none focus:ring-2 focus:ring-[#FF7A00]/20 focus:border-[#FF7A00] transition-all font-medium"
+                    [class.border-red-300]="f['description'].touched && f['description'].invalid"></textarea>
+          @if (f['description'].touched && f['description'].invalid) {
+            <p class="mt-1 text-xs text-red-500">{{ lang.t().declare.errorMin }}</p>
+          }
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit"
+              class="w-full flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#FF7A00] to-orange-500 px-8 py-4 text-lg font-bold text-white shadow-xl shadow-[#FF7A00]/30 hover:shadow-2xl hover:shadow-[#FF7A00]/40 transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              [disabled]="loading()">
+        @if (loading()) {
+          <span class="material-symbols-outlined animate-spin" aria-hidden="true">autorenew</span>
+          {{ t().generating }}
+        } @else {
+          <span class="material-symbols-outlined" aria-hidden="true">qr_code_scanner</span>
+          {{ t().submit }}
+        }
+      </button>
+
+      @if (error()) {
+        <div class="rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 p-4">
+          <div class="flex items-start gap-3">
+            <span class="material-symbols-outlined text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true">error</span>
+            <p class="text-sm text-red-800 dark:text-red-200">{{ error() }}</p>
+          </div>
+        </div>
+      }
+    </form>
+
+    <!-- Footer -->
+    <div class="px-8 pb-8 pt-4 text-xs text-center text-slate-500 dark:text-slate-400">
+      <p>{{ t().help }}</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,537 @@
+<div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SECTION 1 — TUTORIELS YOUTUBE
+  ════════════════════════════════════════════════════════════════════ -->
+
+  <!-- En-tête section -->
+  <div class="mb-10">
+    <span class="text-primary font-headline font-extrabold tracking-widest text-xs uppercase mb-3 block">
+      {{ lang.t().tutorials.sectionLabel }}
+    </span>
+    <h2 class="text-4xl font-headline font-black text-base-content mb-2">
+      {{ lang.t().tutorials.sectionTitle }}
+    </h2>
+    <p class="text-base-content/60 text-base max-w-2xl">
+      {{ lang.t().tutorials.sectionSub }}
+    </p>
+    <div class="h-1.5 w-20 bg-primary rounded-full mt-4"></div>
+  </div>
+
+  <!-- Filtres de catégorie -->
+  <div class="flex flex-wrap gap-2 mb-8">
+    @for (cat of filterCategories; track cat.key) {
+      <button
+        (click)="setFilter(cat.key)"
+        class="px-4 py-1.5 rounded-full text-sm font-headline font-semibold transition-all duration-200 border"
+        [class.bg-primary]="activeCategory() === cat.key"
+        [class.text-white]="activeCategory() === cat.key"
+        [class.border-primary]="activeCategory() === cat.key"
+        [class.bg-base-100]="activeCategory() !== cat.key"
+        [class.text-base-content]="activeCategory() !== cat.key"
+        [class.border-base-300]="activeCategory() !== cat.key"
+      >
+        {{ categoryLabel(cat.key) }}
+      </button>
+    }
+  </div>
+
+  <!-- Layout : lecteur principal + playlist -->
+  @if (filteredVideos.length > 0) {
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+      <!-- ── Lecteur principal ── -->
+      <div class="lg:col-span-8">
+        <div class="bg-base-100 rounded-2xl overflow-hidden shadow-md border border-base-300">
+
+          <!-- Thumbnail cliquable -->
+          <div
+            class="relative aspect-video cursor-pointer group overflow-hidden bg-[#0B1F3A]"
+            (click)="openModal(activeVideoIndex())"
+            role="button"
+            [attr.aria-label]="lang.t().tutorials.watchVideo + ' ' + videoTitle(activeVideo)"
+          >
+            <img
+              [src]="thumbUrl(activeVideo.youtubeId)"
+              [alt]="videoTitle(activeVideo)"
+              class="w-full h-full object-cover opacity-80 group-hover:opacity-90
+                     transition-all duration-700 group-hover:scale-105"
+              loading="lazy"
+              (error)="onFlagError($event)"
+            />
+
+            <!-- Overlay play -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-20 h-20 bg-white/95 rounded-full flex items-center justify-center shadow-2xl
+                          group-hover:scale-110 transition-transform duration-300">
+                <span class="material-symbols-outlined text-primary text-4xl ml-1"
+                      style="font-variation-settings: 'FILL' 1">play_arrow</span>
+              </div>
+            </div>
+
+            <!-- Badge durée -->
+            <div class="absolute bottom-3 right-3 bg-black/70 text-white text-xs font-mono
+                        px-2 py-0.5 rounded-md">
+              {{ activeVideo.duration }}
+            </div>
+
+            <!-- Badge chaîne -->
+            <div class="absolute top-3 left-3 flex items-center gap-2 bg-black/60 text-white
+                        text-xs font-headline font-semibold px-3 py-1.5 rounded-full">
+              <span class="material-symbols-outlined text-red-400 text-sm">smart_display</span>
+              @Tkrestore
+            </div>
+          </div>
+
+          <!-- Infos vidéo -->
+          <div class="px-6 py-5">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <h3 class="text-xl font-headline font-bold text-base-content mb-2 leading-snug">
+                  {{ videoTitle(activeVideo) }}
+                </h3>
+                <p class="text-sm text-base-content/60 leading-relaxed">
+                  {{ videoDescription(activeVideo) }}
+                </p>
+              </div>
+              <a
+                href="https://www.youtube.com/channel/UCZXBI0UdsHlPwrJQixtouxA"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex-shrink-0 flex items-center gap-1.5 text-xs text-primary font-headline font-bold
+                       hover:underline whitespace-nowrap mt-1"
+              >
+                <span class="material-symbols-outlined text-base">open_in_new</span>
+                {{ lang.t().tutorials.seeChannel }}
+              </a>
+            </div>
+
+            <!-- Catégorie badge -->
+            <div class="mt-4 flex items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 bg-primary/10 text-primary
+                           text-xs font-headline font-semibold px-3 py-1 rounded-full">
+                <span class="material-symbols-outlined text-sm">label</span>
+                {{ categoryLabel(activeVideo.category) }}
+              </span>
+              <span class="text-xs text-base-content/50">
+                {{ activeVideoIndex() + 1 }} / {{ filteredVideos.length }}
+                {{ lang.t().tutorials.videoCount }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Playlist ── -->
+      <div class="lg:col-span-4">
+        <div class="bg-base-100 rounded-2xl border border-base-300 overflow-hidden
+                    shadow-sm flex flex-col max-h-[480px] lg:max-h-[520px]">
+
+          <!-- Header playlist — toujours sombre, c'est un bloc de marque -->
+          <div class="px-4 py-3 bg-[#0B1F3A] flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-white text-base">queue_music</span>
+              <span class="font-headline font-bold text-white text-sm uppercase tracking-widest">
+                {{ lang.t().tutorials.playlistLabel }}
+              </span>
+            </div>
+            <span class="text-xs text-white/60 font-mono">
+              {{ filteredVideos.length }} {{ lang.t().tutorials.videoCount }}
+            </span>
+          </div>
+
+          <!-- Liste scrollable -->
+          <div class="overflow-y-auto flex-1 overscroll-contain">
+            @for (video of filteredVideos; track video.youtubeId; let i = $index) {
+              <button
+                (click)="selectVideo(i)"
+                class="w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150
+                       border-b border-base-300/60 last:border-0 group"
+                [class.bg-primary/5]="activeVideoIndex() === i"
+                [class.hover:bg-base-200]="activeVideoIndex() !== i"
+              >
+                <!-- Thumbnail -->
+                <div class="relative w-20 h-[46px] flex-shrink-0 rounded-lg overflow-hidden bg-base-200">
+                  <img
+                    [src]="thumbUrl(video.youtubeId)"
+                    [alt]="videoTitle(video)"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                    (error)="onFlagError($event)"
+                  />
+                  @if (activeVideoIndex() === i) {
+                    <div class="absolute inset-0 bg-primary/80 flex items-center justify-center">
+                      <span class="material-symbols-outlined text-white text-sm"
+                            style="font-variation-settings: 'FILL' 1">play_arrow</span>
+                    </div>
+                  } @else {
+                    <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100
+                                flex items-center justify-center transition-opacity duration-150">
+                      <span class="material-symbols-outlined text-white text-sm">play_circle</span>
+                    </div>
+                  }
+                  <span class="absolute bottom-0.5 right-1 text-white text-[10px] font-mono
+                               bg-black/60 px-1 rounded">{{ video.duration }}</span>
+                </div>
+
+                <!-- Titre -->
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-headline font-semibold leading-snug line-clamp-2"
+                     [class.text-primary]="activeVideoIndex() === i"
+                     [class.text-base-content]="activeVideoIndex() !== i">
+                    {{ videoTitle(video) }}
+                  </p>
+                  <p class="text-[10px] text-base-content/50 mt-0.5">{{ video.duration }}</p>
+                </div>
+              </button>
+            }
+          </div>
+
+          <!-- Footer -->
+          <div class="px-4 py-3 border-t border-base-300 flex-shrink-0">
+            <a
+              href="https://www.youtube.com/channel/UCZXBI0UdsHlPwrJQixtouxA"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex items-center gap-2 text-primary font-headline font-bold text-xs
+                     hover:gap-4 transition-all duration-200 group"
+            >
+              <span class="material-symbols-outlined text-red-500 text-base">smart_display</span>
+              {{ lang.t().tutorials.seeChannel }}
+              <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
+                arrow_right_alt
+              </span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Aucune vidéo -->
+  @if (filteredVideos.length === 0) {
+    <div class="flex flex-col items-center justify-center py-20 gap-4 text-center">
+      <span class="material-symbols-outlined text-5xl text-base-content/30">videocam_off</span>
+      <p class="font-headline font-bold text-base-content">{{ lang.t().tutorials.noVideos }}</p>
+    </div>
+  }
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       MODAL LIGHTBOX YOUTUBE
+  ════════════════════════════════════════════════════════════════════ -->
+  @if (modalOpen()) {
+    <div
+      class="modal-overlay fixed inset-0 z-[999] bg-black/90 flex items-center justify-center p-4 lg:p-8"
+      (click)="handleOverlayClick($event)"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="videoTitle(modalVideo)"
+    >
+      <div class="w-full max-w-4xl bg-[#111] rounded-2xl overflow-hidden shadow-2xl relative">
+
+        <!-- Fermer -->
+        <button
+          (click)="closeModal()"
+          class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20
+                 transition-colors flex items-center justify-center text-white border border-white/10"
+          [attr.aria-label]="lang.t().tutorials.close"
+        >
+          <span class="material-symbols-outlined text-lg">close</span>
+        </button>
+
+        <!-- Player YouTube -->
+        <div class="relative w-full" style="padding-top: 56.25%">
+          <iframe
+            class="absolute inset-0 w-full h-full"
+            [src]="embedUrl(modalVideo.youtubeId)"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowfullscreen
+            [title]="videoTitle(modalVideo)"
+          ></iframe>
+        </div>
+
+        <!-- Infos + navigation -->
+        <div class="px-6 py-4">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-headline font-semibold text-primary uppercase tracking-widest mb-1">
+                {{ categoryLabel(modalVideo.category) }}
+                · {{ modalVideoIndex() + 1 }}/{{ filteredVideos.length }}
+              </p>
+              <h3 class="text-base font-headline font-bold text-white leading-snug">
+                {{ videoTitle(modalVideo) }}
+              </h3>
+              <p class="text-sm text-white/50 mt-1 leading-relaxed line-clamp-2">
+                {{ videoDescription(modalVideo) }}
+              </p>
+            </div>
+          </div>
+
+          <div class="flex gap-3 mt-4">
+            <button
+              (click)="navigateModal(-1)"
+              [disabled]="modalVideoIndex() === 0"
+              class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl
+                     bg-white/8 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed
+                     text-white text-sm font-headline font-semibold transition-colors border border-white/10"
+            >
+              <span class="material-symbols-outlined text-sm">arrow_back</span>
+              {{ lang.t().tutorials.prev }}
+            </button>
+            <button
+              (click)="navigateModal(1)"
+              [disabled]="modalVideoIndex() === filteredVideos.length - 1"
+              class="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl
+                     bg-white/8 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed
+                     text-white text-sm font-headline font-semibold transition-colors border border-white/10"
+            >
+              {{ lang.t().tutorials.next }}
+              <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SECTION 2 — TARIFS PAR PAYS
+  ════════════════════════════════════════════════════════════════════ -->
+  <section class="bg-base-200 py-24 mt-16 rounded-2xl">
+    <div class="breathing-margin">
+
+      <!-- Titre section tarifs -->
+      <div class="mb-12 text-center">
+        <span class="text-primary font-headline font-extrabold tracking-widest text-xs uppercase mb-3 block">
+          {{ lang.t().tutorials.pricingLabel }}
+        </span>
+        <h2 class="text-4xl font-headline font-black text-base-content mb-4">
+          {{ lang.t().about.priceTile }}
+        </h2>
+        <p class="text-base-content/60 text-lg max-w-2xl mx-auto">
+          {{ lang.t().about.priceDescription }}
+        </p>
+      </div>
+
+      <div class="grid lg:grid-cols-12 gap-10 items-start">
+
+        <!-- ── Sélecteur de pays ── -->
+        <div class="lg:col-span-4">
+          <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
+
+            <!-- Header sélecteur — bloc de marque toujours sombre -->
+            <div class="px-5 py-4 border-b border-base-300/20 bg-[#0B1F3A]">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-white text-lg">public</span>
+                <h3 class="font-headline font-bold text-white text-sm uppercase tracking-widest">
+                  {{ lang.t().about.chooseCountry }}
+                </h3>
+              </div>
+            </div>
+
+            <!-- Skeleton loader -->
+            @if (countries().length === 0) {
+              <div class="p-4 space-y-3">
+                @for (i of [1,2,3,4,5,6]; track i) {
+                  <div class="flex items-center gap-3 p-3 rounded-lg">
+                    <div class="w-8 h-6 rounded bg-base-300 animate-pulse flex-shrink-0"></div>
+                    <div class="h-4 bg-base-300 animate-pulse rounded w-28"></div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="max-h-[420px] overflow-y-auto overscroll-contain">
+                @for (country of countries(); track country.id) {
+                  <button
+                    class="w-full flex items-center gap-3 px-5 py-3 text-left transition-all duration-200
+                           border-b border-base-300/30 last:border-0"
+                    [class.bg-primary]="selectedCountryId() === country.id"
+                    [class.hover:bg-base-200]="selectedCountryId() !== country.id"
+                    (click)="onSelectCountry(country.id)"
+                  >
+                    <img
+                      [src]="country.iso_code | countryFlag"
+                      [alt]="country.name"
+                      class="w-8 h-6 rounded object-cover flex-shrink-0 shadow-sm"
+                      loading="lazy"
+                      (error)="onFlagError($event)"
+                    />
+                    <span class="font-headline font-semibold text-sm"
+                          [class.text-white]="selectedCountryId() === country.id"
+                          [class.text-base-content]="selectedCountryId() !== country.id">
+                      {{ country.name }}
+                    </span>
+                    @if (selectedCountryId() === country.id) {
+                      <span class="material-symbols-outlined text-white text-base ml-auto">check_circle</span>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- ── Panneau tarifs ── -->
+        <div class="lg:col-span-8">
+          <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300
+                      min-h-[420px] flex flex-col overflow-hidden">
+
+            <!-- Chargement -->
+            @if (loading()) {
+              <div class="flex flex-col items-center justify-center flex-1 py-20 gap-4">
+                <div class="relative w-16 h-16">
+                  <div class="absolute inset-0 rounded-full border-4 border-primary/20"></div>
+                  <div class="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+                </div>
+                <p class="text-base-content/60 font-headline font-medium">
+                  {{ lang.t().about.loadingMessage }}
+                </p>
+              </div>
+
+            <!-- Erreur -->
+            } @else if (error()) {
+              <div class="flex flex-col items-center justify-center flex-1 py-20 gap-4 px-8 text-center">
+                <div class="w-16 h-16 bg-error/10 rounded-full flex items-center justify-center">
+                  <span class="material-symbols-outlined text-error text-3xl">error_outline</span>
+                </div>
+                <p class="font-headline font-bold text-base-content text-lg">
+                  {{ lang.t().about.loadingErrorMessage }}
+                </p>
+                <p class="text-base-content/60 text-sm">{{ error() }}</p>
+                <button
+                  class="mt-2 px-5 py-2 bg-primary text-white rounded-lg font-headline font-bold text-sm
+                         hover:bg-primary/90 transition-colors"
+                  (click)="onSelectCountry(selectedCountryId()!)"
+                >
+                  {{ lang.t().tutorials.retry }}
+                </button>
+              </div>
+
+            <!-- Données tarifs -->
+            } @else if (selectedCountryPricing()) {
+
+              <!-- Header pays — bloc de marque toujours sombre -->
+              <div class="px-8 py-5 border-b border-base-300/20 bg-[#0B1F3A]
+                          flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center gap-3">
+                  <img
+                    [src]="selectedCountryPricing()!.country.iso_code | countryFlag"
+                    [alt]="selectedCountryPricing()!.country.name"
+                    class="w-8 h-6 rounded shadow-sm object-cover"
+                    (error)="onFlagError($event)"
+                  />
+                  <h3 class="text-md font-headline font-black text-white">
+                    {{ lang.t().tutorials.pricingFor }} {{ selectedCountryPricing()!.country.name }}
+                  </h3>
+                </div>
+                <span class="px-4 py-1.5 bg-primary rounded-full text-white text-xs
+                             font-headline font-bold uppercase tracking-widest">
+                  {{ selectedCountryPricing()!.currency }}
+                </span>
+              </div>
+
+              <!-- Accordion catégories -->
+              <div class="divide-y divide-base-300/50 flex-1">
+                @for (category of selectedCountryPricing()!.categories; track category.id) {
+                  <div>
+                    <!-- Accordion trigger -->
+                    <button
+                      class="w-full flex items-center justify-between px-8 py-5 text-left
+                             hover:bg-base-200 transition-colors group"
+                      (click)="toggleCategory(category.id)"
+                    >
+                      <div class="flex items-center gap-4">
+                        <div class="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center
+                                    flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                          <span class="material-symbols-outlined text-primary text-lg">folder_open</span>
+                        </div>
+                        <div>
+                          <p class="font-headline font-bold text-base-content text-base">{{ category.name }}</p>
+                          <p class="text-xs text-base-content/50 mt-0.5">
+                            {{ category.subcategories.length }}
+                            {{ lang.t().tutorials.services }}
+                          </p>
+                        </div>
+                      </div>
+                      <div class="w-8 h-8 rounded-full border border-base-300 flex items-center
+                                  justify-center flex-shrink-0 transition-transform duration-300"
+                           [class.rotate-180]="isCategoryOpen(category.id)"
+                           [class.bg-primary]="isCategoryOpen(category.id)"
+                           [class.border-primary]="isCategoryOpen(category.id)">
+                        <span class="material-symbols-outlined text-sm"
+                              [class.text-white]="isCategoryOpen(category.id)"
+                              [class.text-base-content]="!isCategoryOpen(category.id)">
+                          expand_more
+                        </span>
+                      </div>
+                    </button>
+
+                    <!-- Accordion body -->
+                    @if (isCategoryOpen(category.id)) {
+                      <div class="bg-base-200 px-8 pb-5 pt-2 space-y-3">
+                        @for (sub of category.subcategories; track sub.id) {
+                          <div class="grid items-center p-4 bg-base-100 rounded-xl
+                                      border border-base-300/40 hover:border-base-300 transition-colors"
+                               style="grid-template-columns: 1fr auto auto; gap: 0 20px;">
+
+                            <!-- Nom sous-catégorie -->
+                            <div class="flex items-center gap-3 min-w-0">
+                              <div class="w-7 h-7 bg-primary/5 rounded-md flex items-center justify-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-primary text-sm">label</span>
+                              </div>
+                              <p class="font-headline font-semibold text-base-content text-sm truncate">{{ sub.name }}</p>
+                            </div>
+
+                            <!-- Prix récupérateur -->
+                            <div class="text-right w-20">
+                              <p class="font-headline font-black text-lg leading-none text-blue-600 dark:text-blue-400">
+                                {{ sub.price | number:'1.0-0' }}
+                              </p>
+                              <p class="text-[11px] text-blue-500 dark:text-blue-400 font-medium mt-0.5">
+                                {{ sub.currency || selectedCountryPricing()!.currency }}
+                                · {{ lang.t().tutorials.toPay }}
+                              </p>
+                            </div>
+
+                            <!-- Gain déclarant -->
+                            <div class="text-right w-20 border-l border-base-300 pl-4">
+                              <p class="font-headline font-black text-lg leading-none text-emerald-600 dark:text-emerald-400">
+                                {{ sub.founder_amount | number:'1.0-0' }}
+                              </p>
+                              <p class="text-[11px] text-emerald-500 dark:text-emerald-400 font-medium mt-0.5">
+                                {{ sub.currency || selectedCountryPricing()!.currency }}
+                                · {{ lang.t().tutorials.toReceive }}
+                              </p>
+                            </div>
+
+                          </div>
+                        }
+
+                        <!-- Légende -->
+                        <div class="flex flex-wrap gap-x-5 gap-y-1 pt-1 px-1">
+                          <div class="flex items-center gap-2 text-xs text-base-content/50">
+                            <span class="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 flex-shrink-0"></span>
+                            {{ lang.t().tutorials.legendPayer }}
+                          </div>
+                          <div class="flex items-center gap-2 text-xs text-base-content/50">
+                            <span class="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 flex-shrink-0"></span>
+                            {{ lang.t().tutorials.legendFinder }}
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+
+              </div>
+            }
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</div>

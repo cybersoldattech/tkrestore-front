@@ -1,0 +1,860 @@
+<div class="mx-auto w-full p-6">
+
+  <!-- ══ HEADER ══ -->
+  <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-black text-slate-900 dark:text-white">
+        {{ t().documents.title }}
+      </h1>
+      <p class="text-slate-600 dark:text-slate-400 mt-1">
+        {{ declarationTotalItems() }} {{ t().documents.total }}
+      </p>
+    </div>
+    <a
+      routerLink="/app/declare-found"
+      class="rounded-lg bg-primary px-6 py-2 sm:px-8 text-sm sm:text-base font-bold text-white
+             shadow-md shadow-primary/20 transition-all hover:bg-primary/90 active:scale-95">
+      {{ t().documents.newDeclaration }}
+    </a>
+  </div>
+
+  <!-- ══ TABS ══ -->
+  <div class="tabs tabs-border">
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TAB 1 : Mes déclarations                                    -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <input type="radio" name="my_tabs_3" class="tab" checked="checked"
+           aria-label="{{ t().documents.title }}" />
+    <div class="tab-content bg-base-100 border-base-300 mt-4">
+
+      <!-- Filtres TAB 1 -->
+      <div class="mb-6 grid grid-cols-1 px-4 py-4 sm:grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Statut
+          </label>
+          <div class="relative">
+            <select class="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700
+                          bg-white dark:bg-slate-900 pl-3 pr-9 py-2.5 text-sm
+                          text-slate-900 dark:text-white cursor-pointer
+                          focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500
+                          transition-colors"
+                    [formControl]="declarationStatusFilter">
+              <option value="all">Tous les statuts</option>
+              <option value="DRAFT">Brouillon</option>
+              <option value="ACTIVE">Actif</option>
+              <option value="MATCHED">Correspondance</option>
+              <option value="REFUNDED">Remboursé</option>
+            </select>
+            <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2
+                        material-symbols-outlined text-slate-400 text-base">
+              expand_more
+            </span>
+          </div>
+        </div>
+
+        <div class="sm:col-span-2">
+          <button type="button"
+                  (click)="resetFilters()"
+                  class="btn btn-ghost w-full sm:w-auto sm:float-right">
+            Réinitialiser les filtres
+          </button>
+        </div>
+      </div>
+
+      @if (declarationItems().length > 0) {
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+          @for (doc of declarationItems(); track doc.id) {
+            <article class="group flex cursor-pointer flex-col overflow-hidden rounded-xl
+                            border border-slate-100 dark:border-slate-800
+                            bg-white dark:bg-slate-800/40
+                            shadow-sm transition-all duration-300
+                            hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5">
+
+              <!-- Image -->
+              <div class="relative h-48 overflow-hidden bg-slate-200 dark:bg-slate-700">
+                @if (doc.images?.length) {
+                  <img [src]="doc.images![0].blurred_url"
+                       [alt]="doc.name_on_item"
+                       class="h-full w-full object-cover opacity-60 blur-sm
+                              transition-transform duration-500
+                              group-hover:scale-110 group-hover:opacity-75"
+                       loading="lazy">
+                } @else {
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">
+                        {{ t().secure_object.description }}
+                    </span>
+                  </div>
+                }
+
+                <!-- Badge sous-catégorie -->
+                <div class="absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-bold
+                            uppercase tracking-wide backdrop-blur-md"
+                     [class]="categoryClass(doc.sub_category?.name ?? '')">
+                  {{ doc.sub_category?.name ?? 'Document' }}
+                </div>
+
+                <!-- Badge LOST / FOUND -->
+                <div class="absolute right-3 top-3 flex items-center gap-1 rounded-full
+                            px-2.5 py-1 text-[10px] font-black uppercase tracking-wider
+                            text-white backdrop-blur-md shadow-sm"
+                     [ngClass]="{
+                       'bg-red-500/90':     doc.type === 'LOST',
+                       'bg-emerald-500/90': doc.type === 'FOUND'
+                     }">
+                  <span class="material-symbols-outlined text-xs leading-none"
+                        style="font-variation-settings:'FILL' 1" aria-hidden="true">
+                    {{ doc.type === 'LOST' ? 'report_problem' : 'where_to_vote' }}
+                  </span>
+                  {{ doc.type === 'FOUND' ? t().search.foundBadge : t().search.lostBadge }}
+                </div>
+
+                <!-- [NEW] Badge REJECTED flottant sur l'image -->
+                @if (doc.status === 'REJECTED') {
+                  <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1
+                              bg-red-600/95 text-white text-[10px] font-black uppercase tracking-wider
+                              px-3 py-1 rounded-full shadow-lg backdrop-blur-sm whitespace-nowrap">
+                    <span class="material-symbols-outlined text-xs leading-none"
+                          style="font-variation-settings:'FILL' 1">cancel</span>
+                    {{ t().documents.rejected ?? 'Rejeté' }}
+                  </div>
+                }
+
+                <!-- Overlay hover -->
+                <div class="absolute inset-0 flex gap-3 items-center justify-center
+                            opacity-0 transition-opacity group-hover:opacity-100">
+                  <a [routerLink]="['/app/restore', doc.id]"
+                     class="rounded-lg bg-white/90 px-4 py-2 text-sm font-bold
+                            text-primary shadow-lg dark:bg-slate-900/90">
+                    {{ t().search.viewDetails }}
+                  </a>
+                </div>
+              </div>
+
+              <!-- Corps de la carte -->
+              <div class="flex flex-1 flex-col p-5">
+                <h3 class="mb-3 text-base font-bold text-slate-900 dark:text-white
+                          transition-colors group-hover:text-primary">
+                  {{ doc.name_on_item || doc.title }}
+                </h3>
+
+                <div class="mt-auto space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="material-symbols-outlined shrink-0 text-base">location_on</span>
+                      <span class="truncate">{{ doc.location }}</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined shrink-0 text-base">calendar_today</span>
+                    <span>{{ t().search.foundOn }} {{ formatDateShort(doc.event_date) }}</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    @if (doc.reference_number) {
+                      <p class="text-sm font-bold text-slate-500 font-mono
+                                bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded inline-block">
+                        #{{ doc.reference_number }}
+                      </p>
+                    }
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold"
+                          [ngClass]="statusBadgeClass(doc.status)">
+                      {{ doc.status }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Bouton Voir détails -->
+                <a [routerLink]="['/app/restore', doc.id]"
+                   (click)="$event.stopPropagation()"
+                   class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl
+                          bg-slate-100 dark:bg-slate-700/50 py-2.5 text-sm font-bold
+                          text-slate-700 dark:text-slate-300 transition-all
+                          hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white">
+                  <span class="material-symbols-outlined text-base">open_in_new</span>
+                  {{ t().search.viewDetails }}
+                </a>
+
+                <!-- [NEW] Bouton "Voir le motif de rejet" — visible uniquement si REJECTED -->
+                @if (doc.status === 'REJECTED') {
+                  <button
+                    (click)="openRejectDetailModal(doc, $event)"
+                    class="mt-2 w-full flex items-center justify-center gap-1.5 rounded-xl
+                           bg-red-50 dark:bg-red-900/20 py-2.5 text-sm font-bold
+                           text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/40
+                           hover:bg-red-100 dark:hover:bg-red-900/30 transition-all">
+                    <span class="material-symbols-outlined text-base"
+                          style="font-variation-settings:'FILL' 1">info</span>
+                    {{ t().documents.viewRejectReason ?? 'Voir le motif de rejet' }}
+                  </button>
+                }
+
+                <!-- Bouton Supprimer (REJECTED ou DRAFT uniquement) -->
+                @if (doc.status === 'REJECTED' || doc.status === 'DRAFT') {
+                  <button (click)="openDeleteModal('document', doc.id)"
+                          class="mt-2 w-full px-4 py-2 bg-red-400 hover:bg-red-500
+                                text-white rounded-xl text-sm font-semibold transition-colors">
+                    {{ t().documents.deleteBtn }}
+                  </button>
+                }
+              </div>
+
+            </article>
+          }
+        </div>
+
+        <!-- Charger plus — Déclarations -->
+        @if (declarationHasMore()) {
+          <div class="my-14 flex justify-center">
+            <button type="button"
+                    (click)="loadMoreDeclaration()"
+                    [disabled]="isLoadingMoreDeclaration()"
+                    class="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700
+                          px-12 py-4 font-bold text-slate-700 dark:text-slate-300 transition-colors
+                          hover:bg-slate-100 dark:hover:bg-slate-800
+                          disabled:opacity-50 disabled:cursor-not-allowed">
+              @if (isLoadingMoreDeclaration()) {
+                <span class="material-symbols-outlined animate-spin">progress_activity</span>
+                {{ t().documents.loading }}
+              } @else {
+                <span class="material-symbols-outlined">expand_more</span>
+                {{ t().documents.loadMore }}
+              }
+            </button>
+          </div>
+        }
+
+      } @else {
+        <div class="text-center py-20">
+          <span class="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-600 mb-4">
+            inventory_2
+          </span>
+          <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            {{ t().documents.noDocumentsTitle }}
+          </h3>
+          <p class="text-slate-500 dark:text-slate-400 mb-6">
+            {{ t().documents.noDocumentsText }}
+          </p>
+          <a routerLink="/app/declare-found"
+             class="rounded-lg bg-primary px-6 py-3 text-base font-bold text-white
+                    shadow-md shadow-primary/20 transition-all hover:bg-primary/90">
+            {{ t().documents.firstDeclaration }}
+          </a>
+        </div>
+      }
+    </div>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TAB 2 : Mes QR Codes                                        -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <input type="radio" name="my_tabs_3" class="tab" aria-label="{{ t().documents.qrCodeTitle }}" />
+    <div class="tab-content mt-4 bg-base-100 border-base-300 p-6">
+
+      @if (qrcodes().length > 0) {
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          @for (qr of qrcodes(); track qr.id) {
+            <article class="group flex cursor-pointer flex-col overflow-hidden rounded-xl
+                            border border-slate-100 dark:border-slate-800
+                            bg-white dark:bg-slate-800/40
+                            shadow-sm transition-all duration-300
+                            hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5">
+              <div class="relative h-48 overflow-hidden bg-slate-200 dark:bg-slate-700">
+                <img [src]="getImageUrl(qr.path)" alt="QR Code"
+                     class="h-full w-full object-cover opacity-60 blur-sm
+                            transition-transform duration-500 group-hover:scale-110 group-hover:opacity-75"
+                     loading="lazy">
+                <div class="absolute inset-0 flex items-center justify-center
+                            opacity-0 transition-opacity group-hover:opacity-100">
+                  <button (click)="viewQR(qr)"
+                          class="rounded-lg bg-white/90 px-4 py-2 text-sm font-bold
+                                 text-primary shadow-lg dark:bg-slate-900/90">
+                    {{ t().documents.see }}
+                  </button>
+                </div>
+                <div class="absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-bold
+                            uppercase tracking-wide backdrop-blur-md
+                            bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                  QR Code
+                </div>
+              </div>
+              <div class="flex flex-1 flex-col p-5">
+                <h3 class="mb-3 text-base font-bold text-slate-900 dark:text-white">
+                  {{ qr.label || 'QR Code' }}
+                  <br>
+                  <span class="text-xs font-mono text-slate-500 dark:text-slate-400">#{{ qr.reference }}</span>
+                </h3>
+                <div class="mt-auto space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                  <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined shrink-0 text-base">calendar_today</span>
+                    <span>{{ formatDateShort(qr.created_at) }}</span>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide"
+                          [ngClass]="{
+                            'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400': qr.status === 'ACTIVE',
+                            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300':               qr.status !== 'ACTIVE'
+                          }">
+                      {{ qr.status }}
+                    </span>
+                    <label class="swap swap-rotate cursor-pointer">
+                      <input type="checkbox" [checked]="qr.status === 'ACTIVE'" (change)="toggleQR(qr.id)">
+                      <div class="swap-on flex items-center gap-1 px-3 py-1.5
+                                  bg-emerald-400 text-white rounded-full text-xs font-bold shadow-md">
+                        <span class="material-symbols-outlined text-xs leading-none">check</span>
+                        {{ t().documents.enabled }}
+                      </div>
+                      <div class="swap-off flex items-center gap-1 px-3 py-1.5
+                                  bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300
+                                  rounded-full text-xs font-bold shadow-md">
+                        <span class="material-symbols-outlined text-xs leading-none">close</span>
+                        {{ t().documents.disabled }}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                <div class="flex gap-2 mt-4">
+                  <button (click)="viewQR(qr)"
+                          class="flex-1 flex items-center justify-center gap-1
+                                 bg-primary text-white py-2 rounded-xl font-bold text-sm
+                                 shadow-md hover:bg-primary/90 transition-all">
+                    <span class="material-symbols-outlined text-sm">visibility</span>
+                    {{ t().documents.see }}
+                  </button>
+                  <button (click)="openDeleteModal('qrcode', qr.id)"
+                          class="flex-1 flex items-center justify-center gap-1
+                                 bg-red-400 hover:bg-red-500 text-white py-2 rounded-xl
+                                 font-bold text-sm shadow-md transition-all">
+                    <span class="material-symbols-outlined text-sm">delete</span>
+                    {{ t().documents.deleted }}
+                  </button>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+
+        @if (hasMoreQR()) {
+          <div class="my-14 flex justify-center">
+            <button (click)="loadMoreQR()" [disabled]="isLoadingMoreQR()"
+                    class="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700
+                           px-12 py-4 font-bold text-slate-700 dark:text-slate-300
+                           hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50">
+              @if (isLoadingMoreQR()) {
+                <span class="material-symbols-outlined animate-spin">progress_activity</span>
+                {{ t().documents.loading }}
+              } @else {
+                <span class="material-symbols-outlined">expand_more</span>
+                {{ t().documents.seeMore }}
+              }
+            </button>
+          </div>
+        }
+
+      } @else {
+        <div class="text-center py-20">
+          <span class="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-600 mb-4">qr_code</span>
+          <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{{ t().documents.noQrTitle }}</h3>
+          <p class="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">{{ t().documents.noQrMessage }}</p>
+          <a routerLink="/app/secure-entity"
+             class="rounded-lg bg-primary px-8 py-3 text-base font-bold text-white shadow-md hover:bg-primary/90">
+            {{ t().documents.createFirstQr }}
+          </a>
+        </div>
+      }
+    </div>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- TAB 3 : Mes restaurations                                   -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <input type="radio" name="my_tabs_3" class="tab" aria-label="{{ t().documents.restorationTitle }}" />
+    <div class="tab-content bg-base-100 border-base-300 mt-4">
+
+      @if (restorationItems().length > 0) {
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+          @for (doc of restorationItems(); track doc.id) {
+            <article (click)="openDetailModal(doc)"
+                     class="group flex cursor-pointer flex-col overflow-hidden rounded-xl
+                            border border-slate-100 dark:border-slate-800
+                            bg-white dark:bg-slate-800/40
+                            shadow-sm transition-all duration-300
+                            hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5">
+              <div class="relative h-48 overflow-hidden bg-slate-200 dark:bg-slate-700">
+                @if (doc.images?.length) {
+                  <img [src]="doc.images![0].clean_url" [alt]="doc.name_on_item"
+                       class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                       loading="lazy">
+                } @else {
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">description</span>
+                  </div>
+                }
+                <div class="absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-bold
+                            uppercase tracking-wide backdrop-blur-md"
+                     [class]="categoryClass(doc.sub_category?.name ?? '')">
+                  {{ doc.sub_category?.name ?? 'Document' }}
+                </div>
+                <div class="absolute right-3 top-3 flex items-center gap-1 rounded-full
+                            px-2.5 py-1 text-[10px] font-black uppercase tracking-wider
+                            backdrop-blur-md shadow-sm"
+                     [class]="restoreBadgeClass(doc)">
+                  <span class="material-symbols-outlined text-xs leading-none"
+                        style="font-variation-settings:'FILL' 1">{{ restoreBadgeIcon(doc) }}</span>
+                  {{ restoreBadgeLabel(doc) }}
+                </div>
+              </div>
+              <div class="flex flex-1 flex-col p-5">
+                <h3 class="mb-3 text-base font-bold text-slate-900 dark:text-white">
+                  {{ doc.name_on_item || doc.title }}
+                </h3>
+                <div class="mt-auto space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                  <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined shrink-0 text-base">location_on</span>
+                    <span class="truncate">{{ doc.location }}</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined shrink-0 text-base">calendar_today</span>
+                    <span>{{ formatDateShort(doc.created_at) }}</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2 mt-4">
+                  @if (needsConfirmRejectAction(doc)) {
+                    <button type="button"
+                            (click)="openConfirmRejectModal('confirm', getDepositId(doc)!); $event.stopPropagation()"
+                            class="flex-1 flex items-center justify-center rounded-xl py-2 px-4 text-sm font-bold
+                                   transition-colors bg-emerald-500/15 text-emerald-700
+                                   dark:bg-emerald-400/10 dark:text-emerald-300 hover:bg-emerald-500/25"
+                            [disabled]="isConfirmRejectLoading() || isConfirmRejectPending()">
+                      <span class="material-symbols-outlined text-base mr-1">check</span>
+                      Confirmer
+                    </button>
+                    <button type="button"
+                            (click)="openConfirmRejectModal('reject', getDepositId(doc)!); $event.stopPropagation()"
+                            class="flex-1 flex justify-center rounded-xl py-2 px-4 text-sm font-bold
+                                   transition-colors bg-amber-500/15 text-amber-700
+                                   dark:bg-amber-500/10 dark:text-amber-300 hover:bg-amber-500/25"
+                            [disabled]="isConfirmRejectLoading() || isConfirmRejectPending()">
+                      <span class="material-symbols-outlined text-base mr-1">cancel</span>
+                      Rejeter
+                    </button>
+                  } @else {
+                    @if (hasDepositId(doc)) {
+                      @if (isRestoreConfirmed(doc)) {
+                        <div class="flex items-center justify-center gap-1.5 rounded-xl py-2 px-4
+                                    text-sm font-bold bg-emerald-100 text-emerald-700
+                                    dark:bg-emerald-900/30 dark:text-emerald-400">
+                          <span class="material-symbols-outlined text-base"
+                                style="font-variation-settings:'FILL' 1">check_circle</span>
+                          {{ t().documents.confirmedRestored }}
+                        </div>
+                      } @else {
+                        <div class="flex items-center justify-center gap-1.5 rounded-xl py-2 px-4
+                                    text-sm font-bold bg-red-100 text-red-700
+                                    dark:bg-red-900/30 dark:text-red-400">
+                          <span class="material-symbols-outlined text-base"
+                                style="font-variation-settings:'FILL' 1">cancel</span>
+                          {{ t().documents.rejectedRestored }}
+                        </div>
+                      }
+                    }
+                    @if (doc.chat?.id) {
+                      <button (click)="goToChat(doc.chat!.id); $event.stopPropagation()"
+                              class="flex-1 flex items-center justify-center gap-1
+                                     bg-primary text-white py-2 px-4 rounded-xl
+                                     text-sm font-bold hover:bg-primary/90 transition-colors">
+                        <span class="material-symbols-outlined text-base">chat</span>
+                        {{ t().documents.chat }}
+                      </button>
+                    }
+                  }
+                  <button (click)="openDetailModal(doc); $event.stopPropagation()"
+                          class="flex-1 flex items-center justify-center gap-1
+                                 bg-slate-100 dark:bg-slate-700 py-2 px-4 rounded-xl
+                                 text-sm font-bold text-slate-700 dark:text-slate-300
+                                 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                    <span class="material-symbols-outlined text-base">visibility</span>
+                    {{ t().documents.details }}
+                  </button>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+
+        @if (restorationHasMore()) {
+          <div class="my-14 flex justify-center">
+            <button type="button" (click)="loadMoreRestoration()" [disabled]="isLoadingMoreRestoration()"
+                    class="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700
+                           px-12 py-4 font-bold text-slate-700 dark:text-slate-300 transition-colors
+                           hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50">
+              @if (isLoadingMoreRestoration()) {
+                <span class="material-symbols-outlined animate-spin">progress_activity</span>
+                {{ t().documents.loading }}
+              } @else {
+                <span class="material-symbols-outlined">expand_more</span>
+                {{ t().documents.loadMore }}
+              }
+            </button>
+          </div>
+        }
+
+      } @else {
+        <div class="text-center py-20">
+          <span class="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-600 mb-4">check_circle</span>
+          <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{{ t().documents.emptyRestoration }}</h3>
+          <p class="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">{{ t().documents.emptyMessage }}</p>
+          <a routerLink="/app/declare-found"
+             class="rounded-lg bg-primary px-6 py-3 text-base font-bold text-white
+                    shadow-md shadow-primary/20 transition-all hover:bg-primary/90">
+            {{ t().documents.firstDeclaration }}
+          </a>
+        </div>
+      }
+    </div>
+
+  </div><!-- /tabs -->
+</div><!-- /page wrapper -->
+
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- [NEW] MODAL — Détails du rejet (TAB 1)                        -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+@if (showRejectModal()) {
+  <div class="modal modal-open" role="dialog" aria-modal="true">
+    <div class="modal-box relative max-w-lg
+                bg-gradient-to-b from-white to-red-50/40
+                dark:from-slate-900 dark:to-red-950/20
+                border border-red-200 dark:border-red-900/40 shadow-2xl">
+
+      <!-- En-tête -->
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center
+                    flex-shrink-0 shadow-sm">
+          <span class="material-symbols-outlined text-3xl text-red-600 dark:text-red-400"
+                style="font-variation-settings:'FILL' 1">cancel</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 class="text-xl font-black text-slate-900 dark:text-white mb-0.5">
+            {{ t().documents.rejectModalTitle ?? 'Déclaration rejetée' }}
+          </h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 truncate">
+            {{ rejectDetailDoc()?.name_on_item || rejectDetailDoc()?.title }}
+            @if (rejectDetailDoc()?.reference_number) {
+              · <span class="font-mono">#{{ rejectDetailDoc()!.reference_number }}</span>
+            }
+          </p>
+        </div>
+        <!-- Bouton fermer -->
+        <button (click)="closeRejectDetailModal()"
+                class="btn btn-ghost btn-square btn-sm flex-shrink-0 -mt-1 -mr-1"
+                aria-label="Fermer">
+          <span class="material-symbols-outlined text-lg">close</span>
+        </button>
+      </div>
+
+      <!-- Ligne séparatrice -->
+      <div class="h-px bg-red-200 dark:bg-red-900/40 mb-5"></div>
+
+      @if (rejectDetailDoc(); as doc) {
+
+        <!-- Raison principale (reject_reason) -->
+        @if (doc.reject_reason?.trim()) {
+          <div class="mb-4">
+            <p class="text-xs font-semibold uppercase tracking-widest text-red-500 dark:text-red-400 mb-2">
+              {{ t().documents.rejectReasonLabel ?? 'Motif du rejet' }}
+            </p>
+            <div class="flex items-start gap-3 bg-red-50 dark:bg-red-950/30
+                        border border-red-200 dark:border-red-800/40
+                        rounded-xl px-4 py-3">
+              <span class="material-symbols-outlined text-red-500 text-lg mt-0.5 flex-shrink-0"
+                    style="font-variation-settings:'FILL' 1">error</span>
+              <p class="text-sm font-semibold text-red-800 dark:text-red-300 leading-relaxed">
+                {{ doc.reject_reason }}
+              </p>
+            </div>
+          </div>
+        }
+
+        <!-- Description détaillée (reject_description) -->
+        @if (doc.reject_description?.trim()) {
+          <div class="mb-4">
+            <p class="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">
+              {{ t().documents.rejectDescriptionLabel ?? 'Détails' }}
+            </p>
+            <div class="bg-slate-50 dark:bg-slate-800/60
+                        border border-slate-200 dark:border-slate-700
+                        rounded-xl px-4 py-3">
+              <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                {{ doc.reject_description }}
+              </p>
+            </div>
+          </div>
+        }
+
+        <!-- Aucune information disponible -->
+        @if (!doc.reject_reason?.trim() && !doc.reject_description?.trim()) {
+          <div class="flex flex-col items-center justify-center py-8 gap-3 text-center">
+            <span class="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600">
+              help_outline
+            </span>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              {{ t().documents.rejectNoDetails ?? 'Aucun détail disponible pour ce rejet. Contactez le support.' }}
+            </p>
+          </div>
+        }
+
+        <!-- Bloc informations du document -->
+        <div class="mt-2 mb-5 grid grid-cols-2 gap-3">
+          <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl px-4 py-3">
+            <p class="text-[10px] uppercase tracking-widest text-slate-400 mb-1">Date</p>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              {{ formatDateShort(doc.event_date) }}
+            </p>
+          </div>
+          <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl px-4 py-3">
+            <p class="text-[10px] uppercase tracking-widest text-slate-400 mb-1">
+              {{ t().documents.category ?? 'Catégorie' }}
+            </p>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
+              {{ doc.sub_category?.name ?? '—' }}
+            </p>
+          </div>
+        </div>
+
+      }
+
+      <!-- Actions -->
+      <div class="modal-action gap-3 mt-0 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <button (click)="closeRejectDetailModal()" class="btn btn-ghost flex-1">
+          <span class="material-symbols-outlined mr-2">close</span>
+          {{ t().documents.close ?? 'Fermer' }}
+        </button>
+        @if (rejectDetailDoc()?.id) {
+          <a [routerLink]="['/app/restore', rejectDetailDoc()!.id]"
+             (click)="closeRejectDetailModal()"
+             class="flex-1 flex items-center justify-center gap-2 py-2 px-4
+                    bg-primary text-white rounded-xl text-sm font-bold
+                    hover:bg-primary/90 transition-colors">
+            <span class="material-symbols-outlined text-base">open_in_new</span>
+            {{ t().search.viewDetails ?? 'Voir le document' }}
+          </a>
+        }
+      </div>
+    </div>
+    <!-- Backdrop -->
+    <div class="modal-backdrop" (click)="closeRejectDetailModal()"></div>
+  </div>
+}
+
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL — Confirmation de suppression                           -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+@if (showDeleteModal()) {
+  <div class="modal modal-open">
+    <div class="modal-box relative max-w-md
+                bg-gradient-to-b from-white to-slate-50
+                dark:from-slate-900 dark:to-slate-800
+                border border-slate-200 dark:border-slate-700 shadow-2xl">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl
+                    flex items-center justify-center shadow-2xl shadow-red-500/25 flex-shrink-0">
+          <span class="material-symbols-outlined text-3xl text-white"
+                style="font-variation-settings:'FILL' 1">delete_forever</span>
+        </div>
+        <div>
+          <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-1">
+            {{ t().documents.deleteConfirmTitle }}
+          </h3>
+          <p class="text-slate-600 dark:text-slate-400">{{ t().documents.deleteConfirmText }}</p>
+        </div>
+      </div>
+      <div class="modal-action gap-3">
+        <button (click)="closeDeleteModal()" class="btn btn-ghost flex-1">
+          <span class="material-symbols-outlined mr-2">close</span>
+          {{ t().documents.cancelBtn }}
+        </button>
+        <button (click)="confirmDeleteAction()"
+                class="flex-1 py-2 px-4 bg-red-400 hover:bg-red-500
+                       text-white rounded-xl text-sm font-semibold transition-colors">
+          {{ t().documents.deleteBtn }}
+        </button>
+      </div>
+    </div>
+    <div class="modal-backdrop" (click)="closeDeleteModal()"></div>
+  </div>
+}
+
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL — Visualisation du QR Code                              -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+@if (showQRViewModal()) {
+  <div class="modal modal-open">
+    <div class="modal-box max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-start justify-between mb-6">
+        <div>
+          <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ t().documents.qrModalTitle }}</h3>
+          <p class="text-slate-600 dark:text-slate-400">{{ t().documents.qrModalMessage }}</p>
+        </div>
+        <button (click)="closeQRViewModal()" class="btn btn-ghost btn-square">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      @if (selectedQR(); as qr) {
+        <div class="text-center p-8 bg-slate-50 dark:bg-slate-800/30 rounded-2xl">
+          <img [src]="getImageUrl(qr.path)" alt="QR Code complet" class="mx-auto max-w-xs">
+          <div class="mt-6 space-y-2">
+            <p class="text-sm text-slate-500">
+              {{ t().documents.modalDetailR }} :
+              <code class="font-mono bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded">{{ qr.reference }}</code>
+            </p>
+          </div>
+        </div>
+      }
+    </div>
+    <div class="modal-backdrop" (click)="closeQRViewModal()"></div>
+  </div>
+}
+
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL — Confirmation Confirmer / Rejeter (restauration)       -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+@if (confirmRejectModalOpen()) {
+  <div class="modal modal-open">
+    <div class="modal-box max-w-md bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-800
+                border border-slate-200 dark:border-slate-700 shadow-2xl">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl flex-shrink-0"
+             [ngClass]="{
+               'bg-emerald-500/20 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300': confirmRejectAction() === 'confirm',
+               'bg-amber-500/20 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300': confirmRejectAction() === 'reject'
+             }">
+          <span class="material-symbols-outlined text-3xl" style="font-variation-settings:'FILL' 1">
+            {{ confirmRejectAction() === 'confirm' ? 'check_circle' : 'warning' }}
+          </span>
+        </div>
+        <div>
+          <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-1">
+            {{ confirmRejectAction() === 'confirm' ? t().documents.confirmRestorationTitle : t().documents.rejectRestorationTitle }}
+          </h3>
+          <p class="text-slate-600 dark:text-slate-400">
+            {{ confirmRejectAction() === 'confirm' ? t().documents.confirmRestorationDescription : t().documents.rejectRestorationDescription }}
+          </p>
+        </div>
+      </div>
+      <div class="modal-action gap-3">
+        <button (click)="closeConfirmRejectModal()" class="btn btn-ghost flex-1">
+          <span class="material-symbols-outlined mr-2">close</span>
+          Annuler
+        </button>
+        <button (click)="confirmReject()"
+                class="flex-1 py-2 px-4 rounded-xl text-sm font-semibold transition-colors"
+                [ngClass]="confirmRejectAction() === 'confirm'
+                  ? 'bg-emerald-500 hover:bg-emerald-500/90 text-white'
+                  : 'bg-amber-500/90 hover:bg-amber-500 text-white'"
+                [disabled]="isConfirmRejectLoading()">
+          @if (isConfirmRejectLoading()) {
+            <span class="material-symbols-outlined animate-spin mr-2">progress_activity</span>
+          }
+          {{ confirmRejectAction() === 'confirm' ? 'Confirmer' : 'Rejeter' }}
+        </button>
+      </div>
+    </div>
+    <div class="modal-backdrop" (click)="closeConfirmRejectModal()"></div>
+  </div>
+}
+
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL — Détails d'une restauration (TAB 3)                    -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+@if (showDetailModal()) {
+  <div class="modal modal-open">
+    <div class="modal-box max-w-4xl max-h-[95vh] overflow-y-auto">
+      <div class="flex items-start justify-between mb-8">
+        <div>
+          <h2 class="text-3xl font-black text-slate-900 dark:text-white mb-1">
+            {{ detailItem()?.name_on_item || detailItem()?.title || 'Détails' }}
+          </h2>
+          <p class="text-slate-600 dark:text-slate-400">{{ t().documents.modalDetailRestoreTitle }}</p>
+        </div>
+        <button (click)="closeDetailModal()" class="btn btn-ghost btn-square btn-lg">
+          <span class="material-symbols-outlined text-2xl">close</span>
+        </button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div>
+          @if (detailItem()?.images?.length) {
+            <app-caroussel
+              [images]="detailItem()?.images || []"
+              [altText]="detailItem()?.name_on_item || 'Objet restauré'">
+            </app-caroussel>
+          } @else {
+            <div class="h-80 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+              <span class="material-symbols-outlined text-6xl text-slate-400">image_not_supported</span>
+            </div>
+          }
+        </div>
+        <div class="space-y-6">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-4">{{ t().documents.modalInformation }}</h3>
+            <dl class="space-y-3 text-sm">
+              @if (detailItem()?.sub_category?.name) {
+                <div class="flex justify-between items-center">
+                  <dt class="text-slate-500 dark:text-slate-400">{{ t().documents.category }}</dt>
+                  <dd class="font-semibold text-slate-800 dark:text-slate-200">{{ detailItem()!.sub_category!.name }}</dd>
+                </div>
+              }
+              <div class="flex justify-between items-center">
+                <dt class="text-slate-500 dark:text-slate-400">Type</dt>
+                <dd>
+                  <span class="px-2 py-1 rounded-full text-xs font-bold"
+                        [ngClass]="{
+                          'bg-red-100 text-red-700':         detailItem()?.type === 'LOST',
+                          'bg-emerald-100 text-emerald-700': detailItem()?.type === 'FOUND'
+                        }">
+                    {{ detailItem()?.type }}
+                  </span>
+                </dd>
+              </div>
+              @if (detailItem()?.location) {
+                <div class="flex justify-between items-center">
+                  <dt class="text-slate-500 dark:text-slate-400">{{ t().documents.place }}</dt>
+                  <dd class="font-semibold text-slate-800 dark:text-slate-200 text-right max-w-[60%]">{{ detailItem()!.location }}</dd>
+                </div>
+              }
+              <div class="flex justify-between items-center">
+                <dt class="text-slate-500 dark:text-slate-400">Date</dt>
+                <dd class="font-semibold text-slate-800 dark:text-slate-200">{{ formatDateShort(detailItem()?.event_date) }}</dd>
+              </div>
+              @if (detailItem()?.reference_number) {
+                <div class="flex justify-between items-center">
+                  <dt class="text-slate-500 dark:text-slate-400">{{ t().documents.modalDetailR }}</dt>
+                  <dd class="font-mono bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-xs">#{{ detailItem()!.reference_number }}</dd>
+                </div>
+              }
+              @if (detailItem()?.description) {
+                <div>
+                  <dt class="text-slate-500 dark:text-slate-400">    {{ detailItem()!.description }}</dt>
+                  <div class="font-mono mt-4 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-xs">{{ detailItem()!.description }}</div>
+                </div>
+              }
+            </dl>
+          </div>
+          <div class="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+            <button (click)="closeDetailModal()" class="flex-1 btn btn-ghost">{{ t().documents.close }}</button>
+            @if (detailItem()?.chat?.id) {
+              <button (click)="goToChat(detailItem()!.chat!.id)" class="flex-1 btn btn-primary">
+                <span class="material-symbols-outlined mr-2">chat</span>
+                {{ t().documents.modalActionOpenChat }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-backdrop" (click)="closeDetailModal()"></div>
+  </div>
+}

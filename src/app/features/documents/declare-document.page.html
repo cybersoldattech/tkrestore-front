@@ -1,0 +1,374 @@
+<div class="mx-auto w-full">
+
+  <!-- En-tête dynamique selon le mode -->
+  <div class="mb-10 space-y-2">
+
+    <!-- Badge mode -->
+    <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider"
+         [class.bg-red-100]="isLost()"
+         [class.text-red-600]="isLost()"
+         [class.dark:bg-red-900/30]="isLost()"
+         [class.dark:text-red-400]="isLost()"
+         [class.bg-emerald-100]="isFound()"
+         [class.text-emerald-600]="isFound()"
+         [class.dark:bg-emerald-900/30]="isFound()"
+         [class.dark:text-emerald-400]="isFound()">
+      <span class="material-symbols-outlined text-sm" aria-hidden="true">
+        {{ isLost() ? 'report_problem' : 'where_to_vote' }}
+      </span>
+      {{ isLost() ? lang.t().declare.modeLost : lang.t().declare.modeFound }}
+    </div>
+
+    <h1 class="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+      {{ isLost() ? lang.t().declare.titleLost : lang.t().declare.titleFound }}
+    </h1>
+    <p class="text-lg text-slate-600 dark:text-slate-400">
+      {{ isLost() ? lang.t().declare.subtitleLost : lang.t().declare.subtitleFound }}
+    </p>
+  </div>
+
+  <!-- Formulaire -->
+  <form
+    class="rounded-2xl border border-slate-200 dark:border-white/10 p-6 md:p-8 shadow-2xl
+           bg-white dark:bg-[#0d2444]"
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    novalidate
+  >
+    <!-- Champ caché declarationType — rempli automatiquement -->
+    <input type="hidden" formControlName="declarationType">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- Catégorie -->
+      <div class="space-y-2">
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300"
+               for="category_id">
+          {{ lang.t().declare.documentType }}
+          <span class="text-primary ml-0.5">*</span>
+        </label>
+        <select id="category_id" formControlName="category_id"
+          (change)="onCategoryChange()"
+          class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                 bg-white dark:bg-slate-800/60
+                 px-4 py-3 text-slate-900 dark:text-white
+                 outline-none transition
+                 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          [class.border-red-400]="form.controls.category_id.invalid && form.controls.category_id.touched">
+          @if (loadingSubCats()) {
+            <option value="" disabled>Chargement...</option>
+          } @else {
+            <option value="" disabled>Sélectionnez une catégorie</option>
+            @for (cat of categories(); track cat.id) {
+              <option [value]="cat.id">{{ cat.name }}</option>
+            }
+          }
+        </select>
+        @if (form.controls.category_id.invalid && form.controls.category_id.touched) {
+          <p class="text-xs text-red-400" role="alert">{{ lang.t().declare.errorRequired }}</p>
+        }
+      </div>
+
+      <!-- Type de document (sous-catégorie) -->
+      <div class="space-y-2">
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300"
+               for="sub_category_id">
+          {{ lang.t().declare.documentType }}
+          <span class="text-primary ml-0.5">*</span>
+        </label>
+        <select id="sub_category_id" formControlName="sub_category_id"
+
+          class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                 bg-white dark:bg-slate-800/60
+                 px-4 py-3 text-slate-900 dark:text-white
+                 outline-none transition
+                 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          [class.border-red-400]="form.controls.sub_category_id.invalid && form.controls.sub_category_id.touched">
+          @if (loadingSubCats()) {
+            <option value="" disabled>{{ lang.t().documents.loading }}...</option>
+          } @else {
+            <option value="" disabled>Sélectionnez un type</option>
+            @for (sub of subCategories(); track sub.id) {
+              <option [value]="sub.id">{{ sub.name }}</option>
+            }
+          }
+        </select>
+        @if (fieldError('sub_category_id')) {
+          <p class="text-xs text-red-400">{{ fieldError('sub_category_id') }}</p>
+        }
+        @if (form.controls.sub_category_id.invalid && form.controls.sub_category_id.touched) {
+          <p class="text-xs text-red-400" role="alert">{{ lang.t().declare.errorRequired }}</p>
+        }
+      </div>
+
+      <!-- Nom sur le document -->
+      <div class="space-y-2">
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300"
+               for="name_on_item">
+          {{ lang.t().declare.nameOnDocument }}
+          <span class="text-primary ml-0.5">*</span>
+        </label>
+        <input
+          id="name_on_item"
+          formControlName="name_on_item"
+          type="text"
+          [placeholder]="lang.t().declare.nameOnDocumentPlaceholder"
+          class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                 bg-white dark:bg-slate-800/60
+                 px-4 py-3 text-slate-900 dark:text-white
+                 placeholder:text-slate-400 dark:placeholder:text-slate-500
+                 outline-none transition
+                 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          [class.border-red-400]="form.controls.name_on_item.invalid && form.controls.name_on_item.touched"
+        >
+        @if (form.controls.name_on_item.invalid && form.controls.name_on_item.touched) {
+          <p class="text-xs text-red-400" role="alert">{{ lang.t().declare.errorRequired }}</p>
+        }
+      </div>
+
+      <!-- Numéro du document -->
+      <div class="space-y-2">
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300"
+               for="reference_number">
+          {{ lang.t().declare.documentNumber }}
+          <span class="text-primary ml-0.5">*</span>
+        </label>
+        <input
+          id="reference_number"
+          formControlName="reference_number"
+          type="text"
+          [placeholder]="lang.t().declare.documentNumberPlaceholder"
+          class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                 bg-white dark:bg-slate-800/60
+                 px-4 py-3 text-slate-900 dark:text-white
+                 placeholder:text-slate-400 dark:placeholder:text-slate-500
+                 outline-none transition
+                 focus:border-primary focus:ring-2 focus:ring-primary/20"
+          [class.border-red-400]="form.controls.reference_number.invalid && form.controls.reference_number.touched"
+        >
+        @if (form.controls.reference_number.invalid && form.controls.reference_number.touched) {
+          <p class="text-xs text-red-400" role="alert">{{ lang.t().declare.errorRequired }}</p>
+        }
+      </div>
+
+      <!-- Date — label change selon le mode -->
+      <div class="space-y-2">
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300"
+               for="event_date">
+          {{ isLost() ? lang.t().declare.dateLost : lang.t().declare.dateFound }}
+          <span class="text-primary ml-0.5">*</span>
+        </label>
+        <input
+          id="event_date"
+          formControlName="event_date"
+          type="date"
+          class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                 bg-white dark:bg-slate-800/60
+                 px-4 py-3 text-slate-900 dark:text-white
+                 outline-none transition
+                 focus:border-primary focus:ring-2 focus:ring-primary/20
+                 [color-scheme:light] dark:[color-scheme:dark]"
+          [class.border-red-400]="(form.controls.event_date.invalid && form.controls.event_date.touched) || !!fieldError('event_date')"
+        >
+
+        <!-- Erreur backend champ-by-champ (422 Laravel) -->
+        @if (fieldError('event_date')) {
+          <p class="text-xs text-red-400">{{ fieldError('event_date') }}</p>
+        }
+
+        <!-- Erreur formulaire (required) -->
+        @if (!fieldError('event_date') && form.controls.event_date.invalid && form.controls.event_date.touched) {
+          <p class="text-xs text-red-400" role="alert">{{ lang.t().declare.errorRequired }}</p>
+        }
+      </div>
+
+
+      <!-- Lieu — label change selon le mode -->
+      <div class="space-y-2 ">
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300"
+               for="location">
+          {{ isLost() ? lang.t().declare.lastKnownLocation : lang.t().declare.foundLocation }}
+          <span class="text-primary ml-0.5">*</span>
+        </label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2
+                       text-slate-400 pointer-events-none" aria-hidden="true">location_on</span>
+          <input
+            id="location"
+            formControlName="location"
+            type="text"
+            [placeholder]="lang.t().declare.lastKnownLocationPlaceholder"
+            class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                   bg-white dark:bg-slate-800/60
+                   pl-12 pr-4 py-3 text-slate-900 dark:text-white
+                   placeholder:text-slate-400 dark:placeholder:text-slate-500
+                   outline-none transition
+                   focus:border-primary focus:ring-2 focus:ring-primary/20"
+            [class.border-red-400]="form.controls.location.invalid && form.controls.location.touched"
+          >
+        </div>
+        @if (form.controls.location.invalid && form.controls.location.touched) {
+          <p class="text-xs text-red-400" role="alert">{{ lang.t().declare.errorRequired }}</p>
+        }
+      </div>
+
+      <!-- Description -->
+      <div class="space-y-2 md:col-span-2">
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300"
+               for="description">
+          {{ lang.t().declare.description }}
+        </label>
+        <textarea
+          id="description"
+          formControlName="description"
+          rows="3"
+          [placeholder]="isLost() ? lang.t().declare.descriptionPlaceholder : lang.t().declare.descriptionFoundPlaceholder"
+          class="w-full rounded-xl border border-slate-200 dark:border-slate-700
+                 bg-white dark:bg-slate-800/60
+                 px-4 py-3 text-slate-900 dark:text-white resize-none
+                 placeholder:text-slate-400 dark:placeholder:text-slate-500
+                 outline-none transition
+                 focus:border-primary focus:ring-2 focus:ring-primary/20"
+        ></textarea>
+      </div>
+
+      <!-- Upload photos -->
+      <div class="space-y-3 md:col-span-2">
+        <div class="flex items-center justify-between">
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+            {{ lang.t().declare.photos }}
+          </label>
+          <span class="text-xs text-slate-400 dark:text-slate-500">
+            {{ uploadedFiles().length }} / {{ maxFiles }}
+          </span>
+        </div>
+
+        @if (canAddMore()) {
+          <div
+            class="relative flex flex-col items-center justify-center w-full min-h-36
+                   rounded-xl border-2 border-dashed transition-all cursor-pointer"
+            [class.border-primary]="isDragging()"
+            [class.bg-primary/5]="isDragging()"
+            [class.border-slate-300]="!isDragging()"
+            [class.dark:border-slate-600]="!isDragging()"
+            [class.bg-slate-50]="!isDragging()"
+            [class.dark:bg-slate-800/30]="!isDragging()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave()"
+            (drop)="onDrop($event)"
+            (click)="fileInput.click()"
+            role="button"
+            tabindex="0"
+            [attr.aria-label]="lang.t().declare.photosHint"
+            (keydown.enter)="fileInput.click()"
+            (keydown.space)="fileInput.click()"
+          >
+            <span class="material-symbols-outlined text-4xl mb-2 transition-colors"
+                  [class.text-primary]="isDragging()"
+                  [class.text-slate-400]="!isDragging()"
+                  aria-hidden="true">cloud_upload</span>
+            <p class="text-sm font-medium text-slate-600 dark:text-slate-400">
+              {{ lang.t().declare.photosHint }}
+            </p>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">
+              {{ lang.t().declare.photosFormat }} — {{ lang.t().declare.photosMax }}
+            </p>
+            <input #fileInput type="file" accept="image/png,image/jpeg"
+                   multiple class="hidden" (change)="onFilesSelected($event)">
+          </div>
+        }
+
+        @if (uploadedFiles().length > 0) {
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            @for (f of uploadedFiles(); track f.name; let i = $index) {
+              <div class="group relative aspect-square overflow-hidden rounded-xl
+                           border border-slate-200 dark:border-slate-700
+                           bg-slate-100 dark:bg-slate-800">
+                <img loading="lazy" [src]="f.preview" [alt]="f.name" class="h-full w-full object-cover">
+                <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2
+                             bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                  <p class="w-full truncate px-1 text-center text-[10px] font-medium leading-tight text-white">
+                    {{ f.name }}
+                  </p>
+                  <p class="text-[9px] text-white/70">{{ f.size }}</p>
+                </div>
+                <button type="button"
+                  class="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center
+                         rounded-full bg-red-500 text-white shadow-md
+                         opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-600
+                         focus:opacity-100"
+                  (click)="removeFile(i)"
+                  [attr.aria-label]="'Supprimer ' + f.name">
+                  <span class="material-symbols-outlined text-sm leading-none" aria-hidden="true">close</span>
+                </button>
+                <span class="absolute bottom-1.5 left-1.5 flex h-5 w-5 items-center justify-center
+                              rounded-full bg-black/60 text-[9px] font-bold text-white">
+                  {{ i + 1 }}
+                </span>
+              </div>
+            }
+            @if (canAddMore()) {
+              <button type="button"
+                class="flex aspect-square flex-col items-center justify-center rounded-xl
+                       border-2 border-dashed border-slate-300 dark:border-slate-600
+                       text-slate-400 dark:text-slate-500 transition-all
+                       hover:border-primary hover:text-primary dark:hover:border-primary dark:hover:text-primary"
+                (click)="addMoreInput.click()"
+                [attr.aria-label]="lang.t().declare.addMorePhotos">
+                <span class="material-symbols-outlined text-2xl" aria-hidden="true">add_photo_alternate</span>
+                <span class="mt-1 px-1 text-center text-[10px] font-medium leading-tight">
+                  {{ lang.t().declare.addMorePhotos }}
+                </span>
+                <input #addMoreInput type="file" accept="image/png,image/jpeg"
+                       multiple class="hidden" (change)="onFilesSelected($event)">
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+    </div>
+
+    <!-- Submit -->
+    <div class="mt-10 flex flex-col  gap-4 sm:gap-0 sm:flex-row items-center justify-between border-t border-slate-200/50 dark:border-white/10 pt-6">
+
+      <!-- Indicateur du type (rappel visuel) -->
+      <div class="flex  items-center gap-2 text-sm font-medium"
+           [class.text-red-500]="isLost()"
+           [class.text-emerald-500]="isFound()">
+        <span class="material-symbols-outlined text-lg" aria-hidden="true">
+          {{ isLost() ? 'report_problem' : 'where_to_vote' }}
+        </span>
+        {{ isLost() ? lang.t().declare.modeLost : lang.t().declare.modeFound }}
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="isLoading()"
+        class="flex items-center gap-2 rounded-xl bg-primary px-10 py-3
+               font-bold text-white shadow-lg shadow-primary/20 transition-all
+               hover:bg-primary/90 active:scale-95
+               disabled:opacity-60 disabled:cursor-not-allowed
+               focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        @if (isLoading()) {
+          <span class="material-symbols-outlined animate-spin" aria-hidden="true">progress_activity</span>
+            {{ lang.t().documents.loading }}...
+        } @else {
+          
+            {{ lang.t().declare.submit }}
+          <span class="material-symbols-outlined" aria-hidden="true">send</span>
+        }
+      </button>
+    </div>
+
+    <!-- Erreur serveur globale -->
+    @if (serverError()) {
+      <div class="mt-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200
+                  dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+        {{ serverError() }}
+      </div>
+    }
+
+  </form>
+</div>

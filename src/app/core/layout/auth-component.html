@@ -1,0 +1,54 @@
+<div class="min-h-screen overflow-y-hidden overflow-x-hidden bg-background-light text-slate-900 antialiased dark:bg-background-dark dark:text-slate-100">
+
+  <!-- Floating controls -->
+  <div class="fixed right-4 mt-4  flex items-center gap-1  z-50"> 
+
+    <!-- Lang switcher -->
+    <div class="relative">
+      <button type="button"
+        class="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+        (click)="toggleLangMenu()" [attr.aria-expanded]="langMenuOpen()" aria-label="Changer de langue">
+        <span class="inline-block h-3.5 w-5 overflow-hidden rounded-sm" [innerHTML]="getCurrentFlagSvg()"></span>
+        <span class="uppercase">{{ lang.currentLang().code }}</span>
+        <span class="material-symbols-outlined text-sm leading-none" aria-hidden="true">expand_more</span>
+      </button>
+  
+      @if (langMenuOpen()) {
+        <div class="fixed inset-0 z-40" (click)="langMenuOpen.set(false)" aria-hidden="true"></div>
+        <ul class="absolute right-0 z-50 mt-1 w-32 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800" role="menu">
+          @for (l of languages; track l.code) {
+            <li role="none">
+              <button type="button" role="menuitem"
+                class="flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium transition hover:bg-slate-50 dark:hover:bg-slate-700"
+                [class.text-primary]="lang.currentCode() === l.code"
+                (click)="selectLang(l.code)">
+                <span class="inline-block h-3.5 w-5 overflow-hidden rounded-sm" [innerHTML]="getFlagSvg(l)"></span>
+                {{ l.label }}
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <!-- Theme toggle -->
+    <button type="button"
+      class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+      (click)="toggleTheme()" [attr.aria-pressed]="isDark()"
+      [attr.aria-label]="isDark() ? 'Mode clair' : 'Mode sombre'">
+      <span class="material-symbols-outlined text-lg leading-none" aria-hidden="true">
+        {{ isDark() ? 'light_mode' : 'dark_mode' }}
+      </span>
+    </button>
+  </div>
+
+  <router-outlet />
+
+
+  <ngx-sonner-toaster
+    position="top-right"
+    [richColors]="true"
+    [closeButton]="true"
+    [duration]="4000"
+  />
+</div>

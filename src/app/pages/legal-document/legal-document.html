@@ -1,0 +1,231 @@
+<!-- src/app/pages/legal-document/legal-document.html -->
+
+<!--
+  Guard de sécurité : on n'affiche rien tant que doc() n'est pas résolu.
+  Évite le crash SSR / premier rendu où le input docType peut être undefined.
+-->
+@if (isReady()) {
+
+<div class="min-h-screen bg-base-100">
+
+  <!-- ── Header ─────────────────────────────────────────────────────── -->
+  <div class="border-b border-base-300 bg-base-200 px-6 pb-9">
+    <div class="mx-auto  pt-8">
+
+      <!-- Badge -->
+      <div class="mb-4 inline-flex items-center gap-1.5 rounded-full border border-base-300
+                  px-3 py-1 text-xs text-base-content/50">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        TKrestore — TKSWIFT SERVICES
+      </div>
+
+      <h1 class="mb-1.5 text-[28px] font-semibold leading-snug text-base-content">
+        {{ doc()!.title }}
+      </h1>
+
+      <p class="mb-3 text-base text-base-content/60">
+        {{ doc()!.subtitle }}
+      </p>
+
+      @if (hasSections()) {
+        <span class="text-[13px] text-base-content/40">
+          {{ lastUpdated() }}
+        </span>
+      }
+
+    </div>
+  </div>
+
+  <!-- ── Layout ─────────────────────────────────────────────────────── -->
+  <div class="mx-auto grid grid-cols-1 items-start gap-8 px-4 pb-16 pt-8
+              md:grid-cols-[220px_1fr] md:px-6">
+
+    <!-- ── TOC sidebar ─────────────────────────────────────────────── -->
+    <aside class="sticky top-20 hidden rounded-xl border border-base-300
+                  bg-base-200 p-5 md:block">
+
+      <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-base-content/40">
+        Sommaire
+      </p>
+
+      @if (hasSections()) {
+        <nav class="space-y-0.5">
+          @for (section of sections(); track section.heading; let i = $index) {
+            <a [href]="'#section-' + i"
+               class="block border-l-2 border-transparent py-[5px] pl-2 text-[13px]
+                      leading-snug text-base-content/60 no-underline transition-all
+                      duration-150 hover:border-primary hover:text-base-content">
+              {{ section.heading }}
+            </a>
+          }
+        </nav>
+      }
+
+      @if (!hasSections()) {
+        <nav class="space-y-1">
+          <a routerLink="/legal"
+             class="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px]
+                    text-base-content/60 no-underline transition-colors
+                    hover:bg-base-100 hover:text-base-content">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            {{ t().dataProcessing.viewTerms }}
+          </a>
+          <a routerLink="/privacyPolicy"
+             class="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px]
+                    text-base-content/60 no-underline transition-colors
+                    hover:bg-base-100 hover:text-base-content">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            {{ t().dataProcessing.viewPrivacy }}
+          </a>
+        </nav>
+      }
+
+    </aside>
+
+    <!-- ── Contenu principal ────────────────────────────────────────── -->
+    <main class="rounded-xl border border-base-300 bg-base-200 px-5 py-5 md:px-10 md:py-9">
+
+      <!-- CAS 1 : legal / privacyPolicy ─────────────────────────────── -->
+      @if (hasSections()) {
+        @for (section of sections(); track section.heading; let i = $index) {
+          <section
+            [id]="'section-' + i"
+            class="mb-9 scroll-mt-20 border-b border-base-300 pb-9 last:mb-0 last:border-b-0">
+
+            <div class="mb-3.5 flex items-start gap-2.5">
+              <span class="mt-1 h-5 w-1 flex-shrink-0 rounded-full bg-primary"></span>
+              <h2 class="text-[17px] font-semibold text-base-content">
+                {{ section.heading }}
+              </h2>
+            </div>
+
+            <div class="pl-3.5">
+              @for (line of toLines(section.content); track $index) {
+                @if (line === '') {
+                  <div class="h-2"></div>
+                } @else if (line.startsWith('•')) {
+                  <p class="mb-1 flex items-start gap-2 text-[14.5px] leading-[1.7] text-base-content/70">
+                    <span class="mt-[0.55rem] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary/40"></span>
+                    <span>{{ line.slice(1).trim() }}</span>
+                  </p>
+                } @else {
+                  <p class="mb-1.5 text-[14.5px] leading-[1.7] text-base-content/70">
+                    {{ line }}
+                  </p>
+                }
+              }
+            </div>
+
+          </section>
+        }
+      }
+
+      <!-- CAS 2 : dataProcessing ─────────────────────────────────────── -->
+      @if (!hasSections()) {
+        <div class="space-y-6">
+
+          <div class="flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   class="text-primary">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+            </div>
+            <div class="badge badge-soft badge-success text-xs font-medium">
+              {{ t().dataProcessing.badge }}
+            </div>
+          </div>
+
+          <p class="text-[15px] leading-relaxed text-base-content/70">
+            {{ t().dataProcessing.intro }}
+          </p>
+
+          <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-base-300
+                        bg-base-100 p-4 transition-colors hover:border-primary/30">
+            <input type="checkbox" class="checkbox checkbox-primary mt-0.5 flex-shrink-0" />
+            <span class="text-sm leading-relaxed text-base-content/80">
+              {{ t().dataProcessing.checkboxLabel }}
+            </span>
+          </label>
+
+          <div class="flex flex-wrap gap-3">
+            <button class="btn btn-primary flex-1 sm:flex-none">
+              {{ t().dataProcessing.acceptBtn }}
+            </button>
+            <button class="btn btn-ghost flex-1 text-base-content/50 sm:flex-none">
+              {{ t().dataProcessing.declineBtn }}
+            </button>
+          </div>
+
+          <p class="text-xs text-base-content/40">
+            {{ t().dataProcessing.alreadyAccepted }}
+          </p>
+
+        </div>
+      }
+
+      <!-- Footer nav ─────────────────────────────────────────────────── -->
+      <div class="mt-9 flex flex-wrap gap-4 border-t border-base-300 pt-6">
+
+        @if (docType() === 'privacyPolicy') {
+          <a routerLink="/legal"
+             class="inline-flex items-center gap-1.5 text-sm text-primary no-underline
+                    transition-opacity hover:opacity-70">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            {{ t().dataProcessing.viewTerms }}
+          </a>
+        }
+
+        @if (docType() === 'legal') {
+          <a routerLink="/privacyPolicy"
+             class="inline-flex items-center gap-1.5 text-sm text-primary no-underline
+                    transition-opacity hover:opacity-70">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            {{ t().dataProcessing.viewPrivacy }}
+          </a>
+        }
+
+        @if (docType() !== 'dataProcessing') {
+          <a routerLink="/dpa"
+             class="inline-flex items-center gap-1.5 text-sm text-primary no-underline
+                    transition-opacity hover:opacity-70">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            {{ t().dataProcessing.title }}
+          </a>
+        }
+
+      </div>
+
+    </main>
+  </div>
+</div>
+
+} @else {
+  <!-- Skeleton pendant la résolution du input (SSR / premier rendu) -->
+  <div class="min-h-screen bg-base-100 flex items-center justify-center">
+    <span class="loading loading-spinner loading-md text-primary"></span>
+  </div>
+}

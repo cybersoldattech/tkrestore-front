@@ -1,0 +1,275 @@
+<div class="flex min-h-screen flex-col lg:flex-row">
+
+  <!-- LEFT: Form -->
+  <div class="flex flex-1 flex-col justify-center px-6 py-16 sm:px-10 lg:px-20
+              bg-background-light dark:bg-background-dark">
+    <div class="mx-auto w-full max-w-lg">
+
+      <!-- Mobile logo -->
+      <div class="mb-10 flex items-center justify-center gap-2 lg:hidden">
+        <a routerLink="/" class="flex shrink-0 items-center gap-2" aria-label="Accueil">
+          <svg width="36" height="36" viewBox="0 0 70 80" fill="none">
+            <path d="M10 0 L50 0 L62 12 L62 80 L10 80 Z" fill="#FF7A00"/>
+            <path d="M50 0 L50 12 L62 12 Z" fill="#cc6200"/>
+            <circle cx="28" cy="46" r="20" fill="white" stroke="#0B1F3A" stroke-width="5"/>
+            <line x1="43" y1="61" x2="57" y2="75" stroke="#0B1F3A" stroke-width="6" stroke-linecap="round"/>
+            <text x="28" y="47" text-anchor="middle" dominant-baseline="central"
+                  font-family="Inter, sans-serif" font-size="15" font-weight="700" fill="#0B1F3A">Tk</text>
+          </svg>
+          <span class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <span class="text-secondary dark:text-white">Tk</span>
+            <span class="text-primary">restore</span>
+          </span>
+        </a>
+      </div>
+
+      <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">{{ lang.t().auth.createAccount }}</h1>
+      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ lang.t().auth.registerSub }}</p>
+
+      <form class="mt-10 space-y-5" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <!-- Full name + Username -->
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+          <!-- Full name -->
+          <div>
+            <label for="full_name" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              {{ lang.t().auth.full_name }}
+            </label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none" aria-hidden="true">person</span>
+              <input id="full_name" type="text" formControlName="full_name" placeholder="John Doe" autocomplete="name"
+                class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50
+                       pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition
+                       focus:border-primary focus:ring-2 focus:ring-primary/20"
+                [class.border-red-400]="form.controls.full_name.invalid && form.controls.full_name.touched">
+            </div>
+            @if (apiError('full_name')) {
+              <p class="mt-1 text-xs text-red-400" role="alert">{{ apiError('full_name') }}</p>
+            }
+          </div>
+
+          <!-- Username -->
+          <div>
+            <label for="username" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              {{ lang.t().auth.username }}
+            </label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none" aria-hidden="true">alternate_email</span>
+              <input id="username" type="text" formControlName="username" placeholder="restaurateur18" autocomplete="username"
+                class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50
+                       pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition
+                       focus:border-primary focus:ring-2 focus:ring-primary/20"
+                [class.border-red-400]="(form.controls.username.invalid && form.controls.username.touched) || !!apiError('username')">
+            </div>
+            @if (apiError('username')) {
+              <p class="mt-1 text-xs text-red-400" role="alert">{{ apiError('username') }}</p>
+            }
+          </div>
+
+        </div>
+
+        <!-- Country + Phone (side by side) -->
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+          <!-- Country select with flag -->
+          <div>
+            <label for="country" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+               {{ lang.t().auth.country }}
+            </label>
+            <div class="relative">
+              <!-- Flag preview -->
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xl pointer-events-none select-none"
+                    aria-hidden="true">{{ selectedFlag }}</span>
+              <select id="country" formControlName="country"
+                class="appearance-none rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50
+                       pl-10 pr-8 py-3 text-sm text-slate-900 dark:text-white outline-none transition cursor-pointer
+                       focus:border-primary focus:ring-2 focus:ring-primary/20"
+                [class.border-red-400]="form.controls.country.invalid && form.controls.country.touched"
+                aria-label="Sélectionner votre pays">
+                @for (country of countries; track country.code) {
+                  <option [value]="country.code">{{ country.flag }} {{ country.name }}</option>
+                }
+              </select>
+              <!-- Chevron icon -->
+              <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-base pointer-events-none" aria-hidden="true">expand_more</span>
+            </div>
+          </div>
+
+          <!-- Phone -->
+          <div>
+            <label for="phone" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              {{ lang.t().auth.phone }}
+            </label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none" aria-hidden="true">call</span>
+              <input id="phone" type="tel" formControlName="phone" placeholder="+237 6 00 00 00 00" autocomplete="tel"
+                class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50
+                       pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition
+                       focus:border-primary focus:ring-2 focus:ring-primary/20"
+                [class.border-red-400]="(form.controls.phone.invalid && form.controls.phone.touched) || !!apiError('phone')">
+            </div>
+            @if (form.controls.phone.invalid && form.controls.phone.touched && !apiError('phone')) {
+              <p class="mt-1 text-xs text-red-400" role="alert">Numéro de téléphone invalide.</p>
+            }
+            @if (apiError('phone')) {
+              <p class="mt-1 text-xs text-red-400" role="alert">{{ apiError('phone') }}</p>
+            }
+          </div>
+
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label for="reg-email" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            {{ lang.t().auth.email }}
+          </label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none" aria-hidden="true">mail</span>
+            <input id="reg-email" type="email" formControlName="email" placeholder="john@example.com" autocomplete="email"
+              class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50
+                     pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition
+                     focus:border-primary focus:ring-2 focus:ring-primary/20"
+              [class.border-red-400]="(form.controls.email.invalid && form.controls.email.touched) || !!apiError('email')">
+          </div>
+          @if (form.controls.email.invalid && form.controls.email.touched && !apiError('email')) {
+            <p class="mt-1 text-xs text-red-400" role="alert">Adresse email invalide.</p>
+          }
+          @if (apiError('email')) {
+            <p class="mt-1 text-xs text-red-400" role="alert">{{ apiError('email') }}</p>
+          }
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label for="reg-password" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            {{ lang.t().auth.password }}
+          </label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none" aria-hidden="true">lock</span>
+            <input id="reg-password" [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password" placeholder="••••••••••••" autocomplete="new-password"
+              class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50
+                     pl-11 pr-12 py-3 text-sm text-slate-900 dark:text-white outline-none transition
+                     focus:border-primary focus:ring-2 focus:ring-primary/20"
+              [class.border-red-400]="(form.controls.password.invalid && form.controls.password.touched) || !!apiError('password')">
+            <button type="button" (click)="togglePassword()" [attr.aria-pressed]="showPassword()" aria-label="Afficher/masquer"
+              class="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+              <span class="material-symbols-outlined text-xl" aria-hidden="true">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
+          @if (apiError('password')) {
+            <p class="mt-1 text-xs text-red-400" role="alert">{{ apiError('password') }}</p>
+          }
+        </div>
+
+        <!-- Confirm Password -->
+        <div>
+          <label for="password_confirmation" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            {{ lang.t().auth.password_confirmation }}
+          </label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xl pointer-events-none" aria-hidden="true">shield</span>
+            <input id="password_confirmation" [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password_confirmation" placeholder="••••••••••••" autocomplete="new-password"
+              class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50
+                     pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition
+                     focus:border-primary focus:ring-2 focus:ring-primary/20"
+              [class.border-red-400]="(form.errors?.['passwordMismatch'] && form.controls.password_confirmation.touched) || !!apiError('password_confirmation')">
+          </div>
+          @if (form.errors?.['passwordMismatch'] && (form.controls.password_confirmation.touched || form.controls.password.touched)) {
+            <p class="mt-1 text-xs text-red-400" role="alert">Les mots de passe ne correspondent pas.</p>
+          }
+          @if (apiError('password_confirmation')) {
+            <p class="mt-1 text-xs text-red-400" role="alert">{{ apiError('password_confirmation') }}</p>
+          }
+        </div>
+
+        <!-- Terms -->
+        <div>
+          <div class="flex items-start gap-3 py-1">
+            <input id="terms" type="checkbox" formControlName="acceptedTerms"
+                   class="mt-0.5 h-4 w-4 rounded border-slate-300 accent-primary cursor-pointer"
+                   [class.outline]="form.controls.acceptedTerms.invalid && form.controls.acceptedTerms.touched"
+                   [class.outline-red-400]="form.controls.acceptedTerms.invalid && form.controls.acceptedTerms.touched">
+            <label for="terms" class="text-sm text-slate-500 dark:text-slate-400 cursor-pointer">
+              {{ lang.t().auth.acceptTerms }}
+              <a routerLink="/legal" class="text-primary hover:underline">{{ lang.t().auth.terms }}</a>
+              &amp;
+              <a routerLink="/private-policy" class="text-primary hover:underline">{{ lang.t().auth.privacy }}</a>.
+            </label>
+          </div>
+          @if (form.controls.acceptedTerms.invalid && form.controls.acceptedTerms.touched) {
+            <p class="mt-1 text-xs text-red-400" role="alert">Vous devez accepter les termes et conditions pour continuer.</p>
+          }
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" [disabled]="isLoading()"
+          class="group flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4
+                 text-sm font-black text-background-dark shadow-lg shadow-primary/20 transition-all
+                 hover:bg-primary/90 active:scale-[.99] disabled:opacity-60 disabled:cursor-not-allowed">
+          @if (isLoading()) {
+            <span class="material-symbols-outlined animate-spin text-xl" aria-hidden="true">progress_activity</span>
+            Création en cours…
+          } @else {
+            {{ lang.t().auth.createBtn }}
+            <span class="material-symbols-outlined transition-transform group-hover:translate-x-1" aria-hidden="true">arrow_forward</span>
+          }
+        </button>
+      </form>
+
+      <p class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+        {{ lang.t().auth.alreadyAccount }}
+        <a routerLink="/auth/login" class="font-bold text-primary hover:underline">{{ lang.t().auth.signInLink }}</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- RIGHT: Branding -->
+  <div class="hidden lg:flex lg:w-[45%] flex-col justify-center p-16
+              bg-gradient-to-br from-[#0B1F3A] via-[#162e50] to-[#0B1F3A] relative overflow-hidden">
+    <div class="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-10 -left-10 w-64 h-64 rounded-full bg-primary/20 blur-2xl pointer-events-none"></div>
+
+    <div class="relative z-10 mb-12 flex items-center gap-3">
+      <a routerLink="/" class="flex shrink-0 items-center gap-2" aria-label="Accueil">
+        <svg width="36" height="36" viewBox="0 0 70 80" fill="none">
+          <path d="M10 0 L50 0 L62 12 L62 80 L10 80 Z" fill="#FF7A00"/>
+          <path d="M50 0 L50 12 L62 12 Z" fill="#cc6200"/>
+          <circle cx="28" cy="46" r="20" fill="white" stroke="#0B1F3A" stroke-width="5"/>
+          <line x1="43" y1="61" x2="57" y2="75" stroke="#0B1F3A" stroke-width="6" stroke-linecap="round"/>
+          <text x="28" y="47" text-anchor="middle" dominant-baseline="central"
+                font-family="Inter, sans-serif" font-size="15" font-weight="700" fill="#0B1F3A">Tk</text>
+        </svg>
+        <span class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+          <span class="text-secondary dark:text-white">Tk</span>
+          <span class="text-primary">restore</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="relative z-10">
+      <div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-primary to-orange-400 opacity-25 blur"></div>
+      <div class="relative rounded-2xl border border-white/10 bg-slate-900/50 p-10">
+        <span class="material-symbols-outlined mb-6 block text-6xl text-primary" aria-hidden="true">verified_user</span>
+        <h2 class="mb-4 text-4xl font-black leading-tight text-white">
+          Your Document,<br><span class="text-primary">Fully Recoverable.</span>
+        </h2>
+        <p class="mb-8 text-xl leading-relaxed text-slate-300">
+          Join over 500,000 professionals who rely on our enterprise-grade recovery systems.
+        </p>
+        <div class="grid grid-cols-2 gap-5">
+          @for (feat of features; track feat.icon) {
+            <div class="flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20">
+                <span class="material-symbols-outlined text-xl text-primary" aria-hidden="true">{{ feat.icon }}</span>
+              </div>
+              <span class="text-sm font-semibold text-white">{{ feat.label }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
