@@ -158,12 +158,11 @@ getChartData(view: 'monthly' | 'yearly', year?: number): Observable<ChartDataRes
     );
   }
 
-  // ── Home stats (public) ───────────────────────────────────────────
   getHomeStats(): Observable<HomeStatsResponse> {
     return this.http.get<HomeStatsResponse>(`${environment.apiUrl}/home/stats`);
   }
 
-  // Recent found items <24h
+  
   recent(): Observable<{data: DocumentDeclaration[]}> {
     return this.http.get<{data: DocumentDeclaration[]}>(`${this.BASE}/recent`);
   }

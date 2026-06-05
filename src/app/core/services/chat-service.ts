@@ -17,7 +17,7 @@ export interface ApiChatThread {
   last_message: ApiMessage | null;
   last_message_at: string | null;
   is_loser: boolean;
-  lost_id: string;
+  lost_id: string; 
   found_id: string;
   unread_count: number;
 }

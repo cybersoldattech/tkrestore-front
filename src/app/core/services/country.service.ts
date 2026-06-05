@@ -18,29 +18,17 @@ export class CountryService {
     return this.http.get<{ data: Country[] }>(`${this.apiBase}/countries`).pipe(
       map(res => res.data.map(this.mapFlag)),
       catchError(() => of([]))
-    );
+    ); 
   }
 
   loadCountries(): void {
-    if (this.countriesSubject.getValue().length > 0) return; // évite les re-chargements inutiles
+    if (this.countriesSubject.getValue().length > 0) return; 
     this.getCountries().subscribe(countries => {
       this.countriesSubject.next(countries);
     });
   }
 
-  /**
-   * Récupère la structure de prix pour un pays donné (par ID ou iso_code).
-   * La réponse API Laravel retourne :
-   * {
-   *   country: Country,
-   *   currency: string,
-   *   categories: Array<{
-   *     id, name,
-   *     sub_categories: Array<{ id, name, prices: Array<{ price, currency_code }> }>
-   *   }>
-   * }
-   * On normalise ici pour que le composant reçoive toujours CountryPricing propre.
-   */
+
   getCountryPricing(countryId: string): Observable<CountryPricing | null> {
     return this.http.get<any>(`${this.apiBase}/countries/${countryId}/pricing`).pipe(
       map(res => this.normalizePricing(res)),
