@@ -211,7 +211,7 @@ export class RestoreDocumentPage implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.canSubmit()) {
+    if (!this.canSubmit()) { 
       this.form.markAllAsTouched();
       return;
     }
